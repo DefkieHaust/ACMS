@@ -1,0 +1,101 @@
+import { useState, useEffect } from 'react';
+import api from '../api/client';
+import Modal from '../components/Modal';
+import toast from 'react-hot-toast';
+
+export default function UnitsPage() {
+  const [units, setUnits] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState({ unitNumber: '', status: 'vacant' });
+
+  useEffect(() => { api.get('/apartment/units').then((r) => setUnits(r.data)); }, []);
+
+  const openCreate = () => {
+    setEditItem(null);
+    setForm({ unitNumber: '', status: 'vacant' });
+    setModalOpen(true);
+  };
+
+  const openEdit = (u) => {
+    setEditItem(u);
+    setForm({ unitNumber: u.unitNumber, status: u.status });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editItem) {
+        await api.put(`/apartment/units/${editItem._id}`, form);
+        toast.success('Unit updated');
+      } else {
+        await api.post('/apartment/units', form);
+        toast.success('Unit created');
+      }
+      setModalOpen(false);
+      const r = await api.get('/apartment/units');
+      setUnits(r.data);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Operation failed');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this unit?')) return;
+    try {
+      await api.delete(`/apartment/units/${id}`);
+      toast.success('Unit deleted');
+      setUnits(units.filter((u) => u._id !== id));
+    } catch (err) {
+      toast.error('Failed to delete unit');
+    }
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Units</h1>
+        <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Unit</button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {units.map((u) => (
+          <div key={u._id} className={`bg-white rounded-xl p-5 shadow-sm border-2 ${u.status === 'occupied' ? 'border-green-200' : 'border-gray-100'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xl font-bold text-gray-900">{u.unitNumber}</h3>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${u.status === 'occupied' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{u.status}</span>
+            </div>
+            {u.residentUserId && (
+              <p className="text-sm text-gray-600">Resident: {u.residentUserId.name}</p>
+            )}
+            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+              <button onClick={() => openEdit(u)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+              <button onClick={() => handleDelete(u._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? 'Edit Unit' : 'Add Unit'}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Unit Number</label>
+            <input type="text" required value={form.unitNumber} onChange={(e) => setForm({ ...form, unitNumber: e.target.value })} placeholder="e.g. A-101" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              <option value="vacant">Vacant</option>
+              <option value="occupied">Occupied</option>
+            </select>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Save</button>
+            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+}
