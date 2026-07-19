@@ -9,135 +9,155 @@ import {
   markInvoicePaidSchema,
 } from '../utils/validate.js';
 import { hashPassword } from '../utils/helpers.js';
-import { Apartment, Plan, User, SaaSInvoice } from '../models/index.js';
-import { ROLES } from '../config/constants.js';
+import { Apartment, Plan, User, SaaSInvoice, Unit } from '../models/index.js';
+import { ROLES, COUNTRY_CURRENCY } from '../config/constants.js';
+import { audit } from '../middleware/audit.js';
 
 const router = Router();
 router.use(authenticate, authorize(ROLES.SITE_ADMIN), tenantIsolation);
 
 router.get('/apartments', async (req, res) => {
   try {
-    const apartments = await Apartment.find().populate('planId').sort({ createdAt: -1 });
-    res.json(apartments);
+    const { search } = req.query;
+    let filter = {};
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { address: { $regex: search, $options: 'i' } },
+        { city: { $regex: search, $options: 'i' } },
+      ];
+    }
+    const apartments = await Apartment.find(filter).populate('planId').sort({ createdAt: -1 });
+    res.json({ success: true, data: apartments });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch apartments' });
+    res.status(500).json({ success: false, error: 'Failed to fetch apartments' });
   }
 });
 
-router.post('/apartments', validate(createApartmentSchema), async (req, res) => {
+router.post('/apartments', validate(createApartmentSchema), audit('create', 'apartment'), async (req, res) => {
   try {
-    const existing = await Apartment.findOne({ name: req.validatedBody.name });
-    if (existing) return res.status(409).json({ error: 'Apartment name already exists' });
-    const apartment = await Apartment.create(req.validatedBody);
-    res.status(201).json(apartment);
+    const data = { ...req.validatedBody };
+    if (data.country && !data.defaultCurrency) {
+      data.defaultCurrency = COUNTRY_CURRENCY[data.country.toLowerCase()] || 'USD';
+    }
+    const existing = await Apartment.findOne({ name: data.name });
+    if (existing) return res.status(409).json({ success: false, error: 'Apartment name already exists' });
+    const apartment = await Apartment.create(data);
+    res.status(201).json({ success: true, data: apartment });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create apartment' });
+    res.status(500).json({ success: false, error: 'Failed to create apartment' });
   }
 });
 
-router.put('/apartments/:id', validate(updateApartmentSchema), async (req, res) => {
+router.put('/apartments/:id', validate(updateApartmentSchema), audit('update', 'apartment'), async (req, res) => {
   try {
     const updateData = { ...req.validatedBody };
     if (updateData.planId === '' || updateData.planId === null) updateData.planId = null;
     const apartment = await Apartment.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    if (!apartment) return res.status(404).json({ error: 'Apartment not found' });
-    res.json(apartment);
+    if (!apartment) return res.status(404).json({ success: false, error: 'Apartment not found' });
+    res.json({ success: true, data: apartment });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update apartment' });
+    res.status(500).json({ success: false, error: 'Failed to update apartment' });
   }
 });
 
-router.delete('/apartments/:id', async (req, res) => {
+router.delete('/apartments/:id', audit('delete', 'apartment'), async (req, res) => {
   try {
     await Apartment.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Apartment deleted' });
+    res.json({ success: true, data: { message: 'Apartment deleted' } });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete apartment' });
+    res.status(500).json({ success: false, error: 'Failed to delete apartment' });
   }
 });
 
 router.get('/plans', async (req, res) => {
   try {
     const plans = await Plan.find().sort({ price: 1 });
-    res.json(plans);
+    res.json({ success: true, data: plans });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch plans' });
+    res.status(500).json({ success: false, error: 'Failed to fetch plans' });
   }
 });
 
-router.post('/plans', validate(createPlanSchema), async (req, res) => {
+router.post('/plans', validate(createPlanSchema), audit('create', 'plan'), async (req, res) => {
   try {
     const plan = await Plan.create(req.validatedBody);
-    res.status(201).json(plan);
+    res.status(201).json({ success: true, data: plan });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create plan' });
+    res.status(500).json({ success: false, error: 'Failed to create plan' });
   }
 });
 
-router.put('/plans/:id', validate(createPlanSchema), async (req, res) => {
+router.put('/plans/:id', validate(createPlanSchema), audit('update', 'plan'), async (req, res) => {
   try {
     const plan = await Plan.findByIdAndUpdate(req.params.id, req.validatedBody, { new: true });
-    if (!plan) return res.status(404).json({ error: 'Plan not found' });
-    res.json(plan);
+    if (!plan) return res.status(404).json({ success: false, error: 'Plan not found' });
+    res.json({ success: true, data: plan });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update plan' });
+    res.status(500).json({ success: false, error: 'Failed to update plan' });
   }
 });
 
-router.delete('/plans/:id', async (req, res) => {
+router.delete('/plans/:id', audit('delete', 'plan'), async (req, res) => {
   try {
     await Plan.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Plan deleted' });
+    res.json({ success: true, data: { message: 'Plan deleted' } });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete plan' });
+    res.status(500).json({ success: false, error: 'Failed to delete plan' });
   }
 });
 
-router.post('/apartment-admins', validate(createUserSchema), async (req, res) => {
+router.post('/apartment-admins', validate(createUserSchema), audit('create', 'apartment_admin'), async (req, res) => {
   try {
-    const { apartmentId, type, name, identifier, password } = req.validatedBody;
-    if (type !== ROLES.APARTMENT_ADMIN) return res.status(400).json({ error: 'Type must be apartment_admin' });
+    const { apartmentId, type, name, identifier, password, phone, identityNumber, residence } = req.validatedBody;
+    if (type !== ROLES.APARTMENT_ADMIN) return res.status(400).json({ success: false, error: 'Type must be apartment_admin' });
     const apartment = await Apartment.findById(apartmentId);
-    if (!apartment) return res.status(404).json({ error: 'Apartment not found' });
+    if (!apartment) return res.status(404).json({ success: false, error: 'Apartment not found' });
 
     const existing = await User.findOne({ apartmentId, type: ROLES.APARTMENT_ADMIN, identifier });
-    if (existing) return res.status(409).json({ error: 'Admin with this identifier already exists in this apartment' });
+    if (existing) return res.status(409).json({ success: false, error: 'Admin with this identifier already exists in this apartment' });
 
     const passwordHash = await hashPassword(password);
-    const user = await User.create({ apartmentId, type, name, identifier, passwordHash });
-    res.status(201).json({ id: user._id, name: user.name, identifier: user.identifier, type: user.type });
+    const user = await User.create({ apartmentId, type, name, identifier, passwordHash, phone, identityNumber, residence });
+    res.status(201).json({ success: true, data: { id: user._id, name: user.name, identifier: user.identifier, type: user.type } });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create apartment admin' });
+    res.status(500).json({ success: false, error: 'Failed to create apartment admin' });
   }
 });
 
 router.get('/invoices', async (req, res) => {
   try {
-    const invoices = await SaaSInvoice.find()
+    const { search } = req.query;
+    let filter = {};
+    if (search) {
+      const apartments = await Apartment.find({ name: { $regex: search, $options: 'i' } }).select('_id');
+      filter.apartmentId = { $in: apartments.map(a => a._id) };
+    }
+    const invoices = await SaaSInvoice.find(filter)
       .populate('apartmentId', 'name')
       .populate('planId', 'name')
       .sort({ generatedAt: -1 });
-    res.json(invoices);
+    res.json({ success: true, data: invoices });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch invoices' });
+    res.status(500).json({ success: false, error: 'Failed to fetch invoices' });
   }
 });
 
-router.put('/invoices/:id/mark-paid', validate(markInvoicePaidSchema), async (req, res) => {
+router.put('/invoices/:id/mark-paid', validate(markInvoicePaidSchema), audit('update', 'invoice'), async (req, res) => {
   try {
     const invoice = await SaaSInvoice.findByIdAndUpdate(
       req.params.id,
       { status: 'paid' },
       { new: true }
     );
-    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
-    res.json(invoice);
+    if (!invoice) return res.status(404).json({ success: false, error: 'Invoice not found' });
+    res.json({ success: true, data: invoice });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update invoice' });
+    res.status(500).json({ success: false, error: 'Failed to update invoice' });
   }
 });
 
-router.get('/invoices/generate', async (req, res) => {
+router.get('/invoices/generate', audit('create', 'invoice_generation'), async (req, res) => {
   try {
     const apartments = await Apartment.find({ status: 'active', planId: { $ne: null } });
     const period = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
@@ -156,18 +176,18 @@ router.get('/invoices/generate', async (req, res) => {
 
       let amount = plan.price;
       if (plan.priceType === 'per-unit') {
-        const { Unit } = await import('../models/index.js');
         const unitCount = await Unit.countDocuments({ apartmentId: apartment._id });
         amount = plan.price * unitCount;
       }
 
-      await SaaSInvoice.create({ apartmentId: apartment._id, planId: plan._id, period, amount, status: 'unpaid', dueDate });
-      results.push({ apartment: apartment.name, amount, generated: true });
+      const currency = apartment.defaultCurrency || plan.currency || 'USD';
+      await SaaSInvoice.create({ apartmentId: apartment._id, planId: plan._id, period, amount, currency, status: 'unpaid', dueDate });
+      results.push({ apartment: apartment.name, amount, currency, generated: true });
     }
 
-    res.json({ message: 'Invoices generated', results });
+    res.json({ success: true, data: { message: 'Invoices generated', results } });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to generate invoices' });
+    res.status(500).json({ success: false, error: 'Failed to generate invoices' });
   }
 });
 

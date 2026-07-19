@@ -9,3 +9,5 @@ export { default as SaaSInvoice } from './SaaSInvoice.js';
 export { default as Complaint } from './Complaint.js';
 export { default as VisitorLog } from './VisitorLog.js';
 export { default as Notice } from './Notice.js';
+export { default as AuditLog } from './AuditLog.js';
+export { default as CustomRole } from './CustomRole.js';

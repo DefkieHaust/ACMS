@@ -10,10 +10,18 @@ export const loginSchema = z.object({
 export const createApartmentSchema = z.object({
   name: z.string().min(1).trim().toLowerCase(),
   address: z.string().min(1),
+  city: z.string().optional().default(''),
+  country: z.string().optional().default(''),
+  apartmentType: z.string().optional().default(''),
+  defaultCurrency: z.string().optional().default('USD'),
 });
 
 export const updateApartmentSchema = z.object({
   address: z.string().optional(),
+  city: z.string().optional(),
+  country: z.string().optional(),
+  apartmentType: z.string().optional(),
+  defaultCurrency: z.string().optional(),
   status: z.enum(['active', 'suspended']).optional(),
   planId: z.string().optional(),
 });
@@ -22,39 +30,81 @@ export const createPlanSchema = z.object({
   name: z.string().min(1),
   priceType: z.enum(['per-unit', 'flat']),
   price: z.number().positive(),
+  currency: z.string().optional().default('USD'),
   features: z.array(z.string()).optional(),
 });
 
 export const createUserSchema = z.object({
   apartmentId: z.string().optional(),
-  type: z.enum(['apartment_admin', 'committee_head', 'committee_member', 'resident']),
+  type: z.enum(['apartment_admin', 'committee_head', 'committee_member', 'resident', 'unit_owner']),
+  residentType: z.enum(['tenant', 'owner_family', 'owner']).optional().nullable(),
   committeeId: z.string().optional(),
   unitId: z.string().optional(),
   name: z.string().min(1),
   identifier: z.string().min(1),
   password: z.string().min(6),
+  phone: z.array(z.string()).optional(),
+  identityNumber: z.string().optional(),
+  residence: z.string().optional(),
+});
+
+export const updateUserSchema = z.object({
+  name: z.string().min(1).optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+  unitId: z.string().optional().nullable(),
+  residentType: z.enum(['tenant', 'owner_family', 'owner']).optional().nullable(),
+  phone: z.array(z.string()).optional(),
+  identityNumber: z.string().optional(),
+  residence: z.string().optional(),
+  customRole: z.string().optional(),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6),
 });
 
 export const createUnitSchema = z.object({
   unitNumber: z.string().min(1),
+  unitType: z.string().optional().default(''),
   residentUserId: z.string().optional(),
+  ownerId: z.string().optional(),
   status: z.enum(['occupied', 'vacant']).optional(),
 });
 
 export const createCommitteeSchema = z.object({
   name: z.string().min(1),
+  description: z.string().optional().default(''),
+});
+
+export const updateCommitteeSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  status: z.enum(['active', 'inactive']).optional(),
 });
 
 export const createCommitteeHeadSchema = z.object({
   name: z.string().min(1),
   identifier: z.string().min(1),
   password: z.string().min(6),
+  phone: z.array(z.string()).optional(),
+  identityNumber: z.string().optional(),
+  residence: z.string().optional(),
 });
 
 export const createCommitteeMemberSchema = z.object({
   name: z.string().min(1),
   identifier: z.string().min(1),
   password: z.string().min(6),
+  phone: z.array(z.string()).optional(),
+  identityNumber: z.string().optional(),
+  residence: z.string().optional(),
+  customRole: z.string().optional(),
+});
+
+export const addCommitteeMemberFromExistingSchema = z.object({
+  userId: z.string().min(1),
+  customRole: z.string().optional(),
 });
 
 export const ledgerEntrySchema = z.object({
@@ -68,7 +118,7 @@ export const generateBillsSchema = z.object({
   amount: z.number().positive(),
   period: z.string().min(1),
   dueDate: z.string().min(1),
-  committeeId: z.string().min(1),
+  currency: z.string().optional().default('USD'),
 });
 
 export const createComplaintSchema = z.object({
@@ -100,4 +150,8 @@ export const createNoticeSchema = z.object({
 
 export const markInvoicePaidSchema = z.object({
   status: z.enum(['paid']),
+});
+
+export const createCustomRoleSchema = z.object({
+  name: z.string().min(1),
 });

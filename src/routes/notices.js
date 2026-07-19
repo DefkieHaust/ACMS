@@ -26,19 +26,19 @@ router.get('/', async (req, res) => {
       .populate('postedBy', 'name')
       .populate('committeeId', 'name')
       .sort({ createdAt: -1 });
-    res.json(notices);
+    res.json({ success: true, data: notices });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch notices' });
+    res.status(500).json({ success: false, error: 'Failed to fetch notices' });
   }
 });
 
 router.post('/', validate(createNoticeSchema), async (req, res) => {
   try {
     if (req.user.type === ROLES.RESIDENT) {
-      return res.status(403).json({ error: 'Residents cannot post notices' });
+      return res.status(403).json({ success: false, error: 'Residents cannot post notices' });
     }
     if (req.user.type === ROLES.COMMITTEE_MEMBER) {
-      return res.status(403).json({ error: 'Committee members cannot post notices' });
+      return res.status(403).json({ success: false, error: 'Committee members cannot post notices' });
     }
 
     const noticeData = {
@@ -52,9 +52,9 @@ router.post('/', validate(createNoticeSchema), async (req, res) => {
     }
 
     const notice = await Notice.create(noticeData);
-    res.status(201).json(notice);
+    res.status(201).json({ success: true, data: notice });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create notice' });
+    res.status(500).json({ success: false, error: 'Failed to create notice' });
   }
 });
 
@@ -65,10 +65,10 @@ router.delete('/:id', async (req, res) => {
       apartmentId: req.apartmentId,
       postedBy: req.user.userId,
     });
-    if (!notice) return res.status(404).json({ error: 'Notice not found or unauthorized' });
-    res.json({ message: 'Notice deleted' });
+    if (!notice) return res.status(404).json({ success: false, error: 'Notice not found or unauthorized' });
+    res.json({ success: true, data: { message: 'Notice deleted' } });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete notice' });
+    res.status(500).json({ success: false, error: 'Failed to delete notice' });
   }
 });
 

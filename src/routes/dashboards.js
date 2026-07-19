@@ -31,29 +31,20 @@ router.get('/site-admin', authorize(ROLES.SITE_ADMIN), async (req, res) => {
       .populate('planId', 'name')
       .sort({ generatedAt: -1 }).limit(5);
 
-    res.json({
-      totalApartments,
-      activeApartments,
-      totalPlans,
-      totalInvoices,
-      unpaidInvoices,
-      totalRevenue,
-      outstandingRevenue,
-      recentApartments,
-      recentInvoices,
-    });
+    res.json({ success: true, data: {
+      totalApartments, activeApartments, totalPlans,
+      totalInvoices, unpaidInvoices, totalRevenue, outstandingRevenue,
+      recentApartments, recentInvoices,
+    } });
   } catch (err) {
-    res.status(500).json({ error: 'Dashboard error' });
+    res.status(500).json({ success: false, error: 'Dashboard error' });
   }
 });
 
 router.get('/apartment-admin', authorize(ROLES.APARTMENT_ADMIN), async (req, res) => {
   try {
     const aptId = req.apartmentId;
-    const [
-      totalUnits, occupiedUnits, totalResidents,
-      totalCommittees, totalComplaints, openComplaints,
-    ] = await Promise.all([
+    const [totalUnits, occupiedUnits, totalResidents, totalCommittees, totalComplaints, openComplaints] = await Promise.all([
       Unit.countDocuments({ apartmentId: aptId }),
       Unit.countDocuments({ apartmentId: aptId, status: 'occupied' }),
       User.countDocuments({ apartmentId: aptId, type: ROLES.RESIDENT }),
@@ -72,23 +63,19 @@ router.get('/apartment-admin', authorize(ROLES.APARTMENT_ADMIN), async (req, res
 
     const apartment = await Apartment.findById(aptId).populate('planId', 'name');
     const invoices = await SaaSInvoice.find({ apartmentId: aptId }).populate('planId', 'name').sort({ generatedAt: -1 }).limit(5);
-
     const recentComplaints = await Complaint.find({ apartmentId: aptId })
       .populate('raisedByUnitId', 'unitNumber')
       .populate('committeeId', 'name')
       .sort({ createdAt: -1 }).limit(5);
-
     const committees = await Committee.find({ apartmentId: aptId }).populate('headUserId', 'name');
 
-    res.json({
+    res.json({ success: true, data: {
       totalUnits, occupiedUnits, vacancyRate: totalUnits ? Math.round((1 - occupiedUnits / totalUnits) * 100) : 0,
       totalResidents, totalCommittees, totalComplaints, openComplaints,
-      totalBills, paidBills, unpaidBills,
-      apartment, invoices,
-      recentComplaints, committees,
-    });
+      totalBills, paidBills, unpaidBills, apartment, invoices, recentComplaints, committees,
+    } });
   } catch (err) {
-    res.status(500).json({ error: 'Dashboard error' });
+    res.status(500).json({ success: false, error: 'Dashboard error' });
   }
 });
 
@@ -96,7 +83,6 @@ router.get('/committee-head', authorize(ROLES.COMMITTEE_HEAD, ROLES.COMMITTEE_ME
   try {
     const commId = req.user.committeeId;
     const aptId = req.apartmentId;
-
     const [committee, members] = await Promise.all([
       Committee.findById(commId),
       User.countDocuments({ committeeId: commId, type: ROLES.COMMITTEE_MEMBER }),
@@ -108,18 +94,14 @@ router.get('/committee-head', authorize(ROLES.COMMITTEE_HEAD, ROLES.COMMITTEE_ME
     ]);
     const totalIncome = ledgerAgg.find((l) => l._id === 'income')?.total || 0;
     const totalExpense = ledgerAgg.find((l) => l._id === 'expense')?.total || 0;
-
     const recentLedger = await CommitteeLedger.find({ committeeId: commId })
       .populate('recordedBy', 'name').sort({ date: -1 }).limit(5);
-
     const [totalComplaints, openComplaints] = await Promise.all([
       Complaint.countDocuments({ committeeId: commId }),
       Complaint.countDocuments({ committeeId: commId, status: { $ne: 'resolved' } }),
     ]);
-
     const recentComplaints = await Complaint.find({ committeeId: commId })
       .populate('raisedByUnitId', 'unitNumber').sort({ createdAt: -1 }).limit(5);
-
     const billsAgg = await MaintenanceBill.aggregate([
       { $match: { committeeId: commId } },
       { $group: { _id: '$status', total: { $sum: '$amount' }, count: { $sum: 1 } } },
@@ -127,28 +109,19 @@ router.get('/committee-head', authorize(ROLES.COMMITTEE_HEAD, ROLES.COMMITTEE_ME
     const totalBills = billsAgg.reduce((s, b) => s + b.total, 0);
     const unpaidBills = billsAgg.find((b) => b._id === 'unpaid')?.total || 0;
 
-    res.json({
-      committee,
-      members,
-      totalIncome,
-      totalExpense,
-      balance: totalIncome - totalExpense,
-      recentLedger,
-      totalComplaints,
-      openComplaints,
-      recentComplaints,
-      totalBills,
-      unpaidBills,
-    });
+    res.json({ success: true, data: {
+      committee, members, totalIncome, totalExpense, balance: totalIncome - totalExpense,
+      recentLedger, totalComplaints, openComplaints, recentComplaints, totalBills, unpaidBills,
+    } });
   } catch (err) {
-    res.status(500).json({ error: 'Dashboard error' });
+    res.status(500).json({ success: false, error: 'Dashboard error' });
   }
 });
 
 router.get('/resident', authorize(ROLES.RESIDENT), async (req, res) => {
   try {
     const unit = await Unit.findOne({ residentUserId: req.user.userId });
-    if (!unit) return res.json({ unit: null });
+    if (!unit) return res.json({ success: true, data: { unit: null } });
 
     const [bills, complaints, notices] = await Promise.all([
       MaintenanceBill.find({ unitId: unit._id }).populate('committeeId', 'name').sort({ dueDate: -1 }),
@@ -159,18 +132,13 @@ router.get('/resident', authorize(ROLES.RESIDENT), async (req, res) => {
     const totalBills = bills.reduce((s, b) => s + b.amount, 0);
     const unpaidBills = bills.filter((b) => b.status === 'unpaid').reduce((s, b) => s + b.amount, 0);
 
-    res.json({
-      unit,
-      bills,
-      complaints,
-      notices,
-      totalBills,
-      unpaidBills,
-      billsCount: bills.length,
-      unpaidCount: bills.filter((b) => b.status === 'unpaid').length,
-    });
+    res.json({ success: true, data: {
+      unit, bills, complaints, notices,
+      totalBills, unpaidBills,
+      billsCount: bills.length, unpaidCount: bills.filter((b) => b.status === 'unpaid').length,
+    } });
   } catch (err) {
-    res.status(500).json({ error: 'Dashboard error' });
+    res.status(500).json({ success: false, error: 'Dashboard error' });
   }
 });
 

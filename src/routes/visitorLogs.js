@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, authorize, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { createVisitorLogSchema, checkoutVisitorSchema } from '../utils/validate.js';
+import { createVisitorLogSchema } from '../utils/validate.js';
 import { VisitorLog } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
 
@@ -17,9 +17,9 @@ router.get('/', async (req, res) => {
     const logs = await VisitorLog.find(filter)
       .populate('loggedBy', 'name')
       .sort({ checkIn: -1 });
-    res.json(logs);
+    res.json({ success: true, data: logs });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch visitor logs' });
+    res.status(500).json({ success: false, error: 'Failed to fetch visitor logs' });
   }
 });
 
@@ -30,9 +30,9 @@ router.post('/', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HEAD), valida
       ...req.validatedBody,
       loggedBy: req.user.userId,
     });
-    res.status(201).json(log);
+    res.status(201).json({ success: true, data: log });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create visitor log' });
+    res.status(500).json({ success: false, error: 'Failed to create visitor log' });
   }
 });
 
@@ -43,10 +43,10 @@ router.put('/:id/checkout', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HE
       { checkOut: new Date() },
       { new: true }
     );
-    if (!log) return res.status(404).json({ error: 'Visitor log not found or already checked out' });
-    res.json(log);
+    if (!log) return res.status(404).json({ success: false, error: 'Visitor log not found or already checked out' });
+    res.json({ success: true, data: log });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to checkout visitor' });
+    res.status(500).json({ success: false, error: 'Failed to checkout visitor' });
   }
 });
 

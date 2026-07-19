@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const committeeSchema = new mongoose.Schema({
   apartmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Apartment', required: true },
   name: { type: String, required: true },
+  description: { type: String, default: '' },
   headUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   createdAt: { type: Date, default: Date.now },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
