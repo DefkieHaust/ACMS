@@ -40,13 +40,13 @@ export default function SiteAdminDashboard() {
               <div key={a._id} className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-gray-900">{a.name}</p>
-                  <p className="text-sm text-gray-500">{a.planId?.name || 'No plan'}</p>
+                  <p className="text-sm text-gray-500">{a.planId?.name || 'No plan'} {a.city ? `· ${a.city}` : ''} {a.apartmentType ? `· ${a.apartmentType.replace('_', ' ')}` : ''}</p>
                 </div>
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${a.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{a.status}</span>
               </div>
             ))}
           </div>
-          <Link to="/apartments" className="block mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium">View all apartments →</Link>
+          <Link to="/admin/apartments" className="block mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium">View all apartments →</Link>
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -56,7 +56,7 @@ export default function SiteAdminDashboard() {
               <div key={inv._id} className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-gray-900">{inv.apartmentId?.name}</p>
-                  <p className="text-sm text-gray-500">{inv.period} · ${inv.amount}</p>
+                  <p className="text-sm text-gray-500">{inv.period} · {(inv.currency || '$')}{inv.amount}</p>
                 </div>
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${inv.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{inv.status}</span>
               </div>

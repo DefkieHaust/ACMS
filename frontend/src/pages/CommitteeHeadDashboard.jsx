@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
-import { ROLES } from '../utils/constants';
+import { ROLES, BILL_STATUS } from '../utils/constants';
 
 export default function CommitteeHeadDashboard() {
   const { user } = useAuth();
@@ -20,11 +20,11 @@ export default function CommitteeHeadDashboard() {
     { label: 'Open Complaints', value: data.openComplaints },
   ] : [
     { label: 'Members', value: data.members },
-    { label: 'Income', value: `$${data.totalIncome?.toLocaleString() || 0}` },
-    { label: 'Expenses', value: `$${data.totalExpense?.toLocaleString() || 0}` },
-    { label: 'Balance', value: `$${data.balance?.toLocaleString() || 0}` },
+    { label: 'Income', value: `${data.currency || '$'}{data.totalIncome?.toLocaleString() || 0}` },
+    { label: 'Expenses', value: `${data.currency || '$'}{data.totalExpense?.toLocaleString() || 0}` },
+    { label: 'Balance', value: `${data.currency || '$'}{data.balance?.toLocaleString() || 0}` },
     { label: 'Complaints', value: data.totalComplaints, sub: `${data.openComplaints} open` },
-    { label: 'Bills', value: `$${data.totalBills?.toLocaleString() || 0}`, sub: `$${data.unpaidBills?.toLocaleString() || 0} unpaid` },
+    { label: 'Bills', value: `${data.currency || '$'}{data.totalBills?.toLocaleString() || 0}`, sub: `${data.currency || '$'}{data.unpaidBills?.toLocaleString() || 0} unpaid` },
   ];
 
   return (
@@ -55,7 +55,7 @@ export default function CommitteeHeadDashboard() {
                     <p className="text-xs text-gray-500">{e.recordedBy?.name} · {new Date(e.date).toLocaleDateString()}</p>
                   </div>
                   <span className={`font-medium ${e.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {e.type === 'income' ? '+' : '-'}${e.amount}
+                    {e.type === 'income' ? '+' : '-'}{data.currency || '$'}{e.amount}
                   </span>
                 </div>
               ))}

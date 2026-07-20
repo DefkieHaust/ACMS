@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
+import { CURRENCIES } from '../utils/constants';
 
 export default function PlansPage() {
   const [plans, setPlans] = useState([]);
@@ -13,13 +14,13 @@ export default function PlansPage() {
 
   const openCreate = () => {
     setEditItem(null);
-    setForm({ name: '', priceType: 'flat', price: '', features: '' });
+    setForm({ name: '', priceType: 'flat', price: '', features: '', currency: 'USD' });
     setModalOpen(true);
   };
 
   const openEdit = (p) => {
     setEditItem(p);
-    setForm({ name: p.name, priceType: p.priceType, price: String(p.price), features: (p.features || []).join(', ') });
+    setForm({ name: p.name, priceType: p.priceType, price: String(p.price), features: (p.features || []).join(', '), currency: p.currency || 'USD' });
     setModalOpen(true);
   };
 
@@ -64,7 +65,7 @@ export default function PlansPage() {
         {plans.map((p) => (
           <div key={p._id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900">{p.name}</h3>
-            <p className="text-3xl font-bold text-indigo-600 mt-2">${p.price}<span className="text-sm text-gray-500 font-normal">/{p.priceType === 'per-unit' ? 'unit/month' : 'month'}</span></p>
+            <p className="text-3xl font-bold text-indigo-600 mt-2">{p.currency || '$'}{p.price}<span className="text-sm text-gray-500 font-normal">/{p.priceType === 'per-unit' ? 'unit/month' : 'month'}</span></p>
             <p className="text-sm text-gray-500 mt-1 capitalize">{p.priceType} pricing</p>
             {p.features?.length > 0 && (
               <ul className="mt-4 space-y-1">
@@ -95,6 +96,12 @@ export default function PlansPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
             <input type="number" required min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+            <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Features (comma separated)</label>

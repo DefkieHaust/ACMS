@@ -25,6 +25,20 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const r = await api.get('/admin/invoices/export', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([r.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'invoices.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Export failed');
+    }
+  };
+
   const generateInvoices = async () => {
     try {
       const r = await api.get('/admin/invoices/generate');
@@ -40,7 +54,10 @@ export default function InvoicesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">SaaS Invoices</h1>
         {isSiteAdmin && (
-          <button onClick={generateInvoices} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Generate Monthly</button>
+          <div className="flex gap-2">
+            <button onClick={generateInvoices} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Generate Monthly</button>
+            <button onClick={handleExport} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">Export CSV</button>
+          </div>
         )}
       </div>
 
@@ -63,7 +80,7 @@ export default function InvoicesPage() {
                 {isSiteAdmin && <td className="px-6 py-4 font-medium text-gray-900">{inv.apartmentId?.name}</td>}
                 <td className="px-6 py-4 text-gray-600">{inv.period}</td>
                 <td className="px-6 py-4 text-gray-600">{inv.planId?.name || '-'}</td>
-                <td className="px-6 py-4 font-medium text-gray-900">${inv.amount?.toFixed(2)}</td>
+                <td className="px-6 py-4 font-medium text-gray-900">{(inv.currency || '$')}{inv.amount?.toFixed(2)}</td>
                 <td className="px-6 py-4">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${inv.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{inv.status}</span>
                 </td>

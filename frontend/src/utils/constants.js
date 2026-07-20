@@ -14,6 +14,14 @@ export const ROLE_LABELS = {
   resident: 'Resident',
 };
 
+export const CURRENCIES = ['USD', 'EUR', 'GBP', 'NGN', 'KES', 'ZAR', 'GHS', 'TZS', 'UGX', 'RWF', 'XAF', 'XOF'];
+
+export const APARTMENT_TYPES = ['residential', 'commercial', 'mixed_use'];
+
+export const UNIT_TYPES = ['apartment', 'studio', 'penthouse', 'duplex', 'shop', 'office', 'warehouse'];
+
+export const RESIDENT_TYPES = ['owner', 'tenant', 'family', 'caretaker'];
+
 export const COMPLAINT_STATUS = {
   OPEN: 'open',
   IN_PROGRESS: 'in_progress',
@@ -32,6 +40,8 @@ export const NAV_ITEMS = {
     { label: 'Apartments', path: '/admin/apartments' },
     { label: 'Plans', path: '/admin/plans' },
     { label: 'SaaS Invoices', path: '/admin/invoices' },
+    { label: 'Account Management', path: '/admin/account-management' },
+    { label: 'Change Password', path: '/change-password' },
   ],
   apartment_admin: [
     { label: 'Dashboard', path: '/' },
@@ -40,6 +50,7 @@ export const NAV_ITEMS = {
     { label: 'Committees', path: '/committees' },
     { label: 'Invoices', path: '/invoices' },
     { label: 'Notices', path: '/notices' },
+    { label: 'Change Password', path: '/change-password' },
   ],
   committee_head: [
     { label: 'Dashboard', path: '/' },
@@ -48,16 +59,19 @@ export const NAV_ITEMS = {
     { label: 'Bills', path: '/bills' },
     { label: 'Complaints', path: '/complaints' },
     { label: 'Notices', path: '/notices' },
+    { label: 'Change Password', path: '/change-password' },
   ],
   committee_member: [
     { label: 'Dashboard', path: '/' },
     { label: 'Visitor Log', path: '/visitors' },
     { label: 'Complaints', path: '/complaints' },
+    { label: 'Change Password', path: '/change-password' },
   ],
   resident: [
     { label: 'Dashboard', path: '/' },
     { label: 'My Bills', path: '/bills' },
     { label: 'Complaints', path: '/complaints' },
     { label: 'Notices', path: '/notices' },
+    { label: 'Change Password', path: '/change-password' },
   ],
 };

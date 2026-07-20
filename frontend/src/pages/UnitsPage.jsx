@@ -2,24 +2,29 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
+import { UNIT_TYPES } from '../utils/constants';
 
 export default function UnitsPage() {
   const [units, setUnits] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({ unitNumber: '', status: 'vacant' });
+  const [form, setForm] = useState({ unitNumber: '', status: 'vacant', unitType: 'apartment', ownerId: '' });
+  const [owners, setOwners] = useState([]);
 
-  useEffect(() => { api.get('/apartment/units').then((r) => setUnits(r.data)); }, []);
+  useEffect(() => {
+    api.get('/apartment/units').then((r) => setUnits(r.data));
+    api.get('/apartment/residents').then((r) => setOwners(r.data.filter((res) => res.residentType === 'owner' || !res.residentType))).catch(() => {});
+  }, []);
 
   const openCreate = () => {
     setEditItem(null);
-    setForm({ unitNumber: '', status: 'vacant' });
+    setForm({ unitNumber: '', status: 'vacant', unitType: 'apartment', ownerId: '' });
     setModalOpen(true);
   };
 
   const openEdit = (u) => {
     setEditItem(u);
-    setForm({ unitNumber: u.unitNumber, status: u.status });
+    setForm({ unitNumber: u.unitNumber, status: u.status, unitType: u.unitType || 'apartment', ownerId: u.ownerId?._id || '' });
     setModalOpen(true);
   };
 
@@ -63,7 +68,10 @@ export default function UnitsPage() {
         {units.map((u) => (
           <div key={u._id} className={`bg-white rounded-xl p-5 shadow-sm border-2 ${u.status === 'occupied' ? 'border-green-200' : 'border-gray-100'}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-bold text-gray-900">{u.unitNumber}</h3>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">{u.unitNumber}</h3>
+                <span className="text-xs text-gray-500 capitalize">{u.unitType || 'apartment'}</span>
+              </div>
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${u.status === 'occupied' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{u.status}</span>
             </div>
             {u.residentUserId && (
@@ -88,6 +96,19 @@ export default function UnitsPage() {
             <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
               <option value="vacant">Vacant</option>
               <option value="occupied">Occupied</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Unit Type</label>
+            <select value={form.unitType} onChange={(e) => setForm({ ...form, unitType: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              {UNIT_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Owner</label>
+            <select value={form.ownerId} onChange={(e) => setForm({ ...form, ownerId: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              <option value="">No owner</option>
+              {owners.map((o) => <option key={o._id} value={o._id}>{o.name}</option>)}
             </select>
           </div>
           <div className="flex gap-3 pt-2">

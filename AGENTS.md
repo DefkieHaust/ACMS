@@ -19,6 +19,7 @@
 - Use the best model for the task - premium models for complex tasks (like coding) and mid-tier models for simpler tasks, like documentation
 - After completing features (large or small), always run commands like lint, type check and next build to check code quality
 - **All changes must be committed to git at the end of the session.** Before committing, review `git status`, `git diff`, and `git log --oneline -5`. Stage only intended files and write a concise commit message matching repo style.
+- **Full-stack requirement: all features must be implemented end-to-end across the entire stack.** Backend API changes (routes, models, schemas, middleware) and frontend UI changes (pages, components, forms, API integration) must always be done together. A feature is not complete until both backend and frontend are updated and working. Never implement backend-only or frontend-only — always update both sides of the stack in the same session.
 
 ## TESTING
 

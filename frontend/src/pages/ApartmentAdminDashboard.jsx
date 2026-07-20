@@ -26,7 +26,7 @@ export default function ApartmentAdminDashboard() {
         <div className="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-lg font-semibold text-gray-900 capitalize">{data.apartment.name}</p>
-            <p className="text-sm text-gray-500">{data.apartment.address} · Plan: {data.apartment.planId?.name || 'None'}</p>
+            <p className="text-sm text-gray-500">{data.apartment.address} · {data.apartment.city || ''} {data.apartment.country || ''} · {data.apartment.apartmentType?.replace('_', ' ') || 'residential'} · Plan: {data.apartment.planId?.name || 'None'}</p>
           </div>
         </div>
       )}

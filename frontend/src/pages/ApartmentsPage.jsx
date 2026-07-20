@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
+import { CURRENCIES, APARTMENT_TYPES } from '../utils/constants';
 
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState([]);
@@ -20,13 +21,13 @@ export default function ApartmentsPage() {
 
   const openCreate = () => {
     setEditItem(null);
-    setForm({ name: '', address: '', planId: '' });
+    setForm({ name: '', address: '', planId: '', city: '', country: '', apartmentType: 'residential', defaultCurrency: 'USD' });
     setEditOpen(true);
   };
 
   const openEdit = (a) => {
     setEditItem(a);
-    setForm({ name: a.name, address: a.address, planId: a.planId?._id || '' });
+    setForm({ name: a.name, address: a.address, planId: a.planId?._id || '', city: a.city || '', country: a.country || '', apartmentType: a.apartmentType || 'residential', defaultCurrency: a.defaultCurrency || 'USD' });
     setEditOpen(true);
   };
 
@@ -34,11 +35,12 @@ export default function ApartmentsPage() {
     e.preventDefault();
     try {
       if (editItem) {
-        const payload = { address: form.address, planId: form.planId || null };
+        const payload = { address: form.address, planId: form.planId || null, city: form.city, country: form.country, apartmentType: form.apartmentType, defaultCurrency: form.defaultCurrency };
         await api.put(`/admin/apartments/${editItem._id}`, payload);
         toast.success('Apartment updated');
       } else {
-        await api.post('/admin/apartments', form);
+        const payload = { ...form };
+        await api.post('/admin/apartments', payload);
         toast.success('Apartment created');
       }
       setEditOpen(false);
@@ -86,6 +88,9 @@ export default function ApartmentsPage() {
             <tr>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Name</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Address</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">City</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Country</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Type</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Plan</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -96,6 +101,9 @@ export default function ApartmentsPage() {
               <tr key={a._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 font-medium text-gray-900">{a.name}</td>
                 <td className="px-6 py-4 text-gray-600">{a.address}</td>
+                <td className="px-6 py-4 text-gray-600">{a.city || '-'}</td>
+                <td className="px-6 py-4 text-gray-600">{a.country || '-'}</td>
+                <td className="px-6 py-4"><span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">{a.apartmentType || 'residential'}</span></td>
                 <td className="px-6 py-4 text-gray-600">{a.planId?.name || '-'}</td>
                 <td className="px-6 py-4">
                   <button onClick={() => toggleStatus(a)} className={`px-2 py-1 text-xs font-medium rounded-full ${a.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{a.status}</button>
@@ -120,6 +128,30 @@ export default function ApartmentsPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
             <input type="text" required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <input type="text" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <input type="text" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select value={form.apartmentType} onChange={(e) => setForm({ ...form, apartmentType: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                {APARTMENT_TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
+              <select value={form.defaultCurrency} onChange={(e) => setForm({ ...form, defaultCurrency: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>

@@ -25,11 +25,11 @@ export default function ResidentDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <p className="text-sm text-gray-500 mb-1">Total Due</p>
-              <p className="text-2xl font-bold text-gray-900">${data.totalBills?.toLocaleString() || 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{data.currency || '$'}{data.totalBills?.toLocaleString() || 0}</p>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <p className="text-sm text-gray-500 mb-1">Unpaid</p>
-              <p className="text-2xl font-bold text-red-600">${data.unpaidBills?.toLocaleString() || 0}</p>
+              <p className="text-2xl font-bold text-red-600">{data.currency || '$'}{data.unpaidBills?.toLocaleString() || 0}</p>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <p className="text-sm text-gray-500 mb-1">Open Complaints</p>
@@ -44,7 +44,7 @@ export default function ResidentDashboard() {
                 {data.bills?.slice(0, 5).map((b) => (
                   <div key={b._id} className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-gray-900">{b.committeeId?.name} - ${b.amount}</p>
+                      <p className="font-medium text-gray-900">{b.committeeId?.name} - {data.currency || '$'}{b.amount}</p>
                       <p className="text-xs text-gray-500">{b.period} · Due {new Date(b.dueDate).toLocaleDateString()}</p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${b.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{b.status}</span>
