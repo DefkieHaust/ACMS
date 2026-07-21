@@ -23,7 +23,7 @@ export const updateApartmentSchema = z.object({
   apartmentType: z.string().optional(),
   defaultCurrency: z.string().optional(),
   status: z.enum(['active', 'suspended']).optional(),
-  planId: z.string().optional(),
+  planId: z.string().optional().nullable(),
 });
 
 export const createPlanSchema = z.object({
@@ -37,7 +37,7 @@ export const createPlanSchema = z.object({
 export const createUserSchema = z.object({
   apartmentId: z.string().optional(),
   type: z.enum(['apartment_admin', 'committee_head', 'committee_member', 'resident', 'unit_owner']),
-  residentType: z.enum(['tenant', 'owner_family', 'owner']).optional().nullable(),
+  residentType: z.string().optional().nullable(),
   committeeId: z.string().optional(),
   unitId: z.string().optional(),
   name: z.string().min(1),
@@ -52,7 +52,7 @@ export const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   status: z.enum(['active', 'inactive']).optional(),
   unitId: z.string().optional().nullable(),
-  residentType: z.enum(['tenant', 'owner_family', 'owner']).optional().nullable(),
+  residentType: z.string().optional().nullable(),
   phone: z.array(z.string()).optional(),
   identityNumber: z.string().optional(),
   residence: z.string().optional(),

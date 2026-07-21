@@ -9,7 +9,6 @@ const userSchema = new mongoose.Schema({
   },
   residentType: {
     type: String,
-    enum: ['tenant', 'owner_family', 'owner', null],
     default: null,
   },
   committeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Committee', default: null },

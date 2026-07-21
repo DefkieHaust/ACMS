@@ -7,7 +7,7 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "seed": "node src/seed.js",
-    "test": "NODE_ENV=test MONGODB_MEMORY_SERVER_STARTUP_TIMEOUT=120000 NODE_OPTIONS=\"--experimental-vm-modules\" jest --forceExit --detectOpenHandles --no-cache",
+    "test": "NODE_ENV=test NODE_OPTIONS=\"--experimental-vm-modules\" jest --forceExit --detectOpenHandles --no-cache",
     "lint": "eslint src/"
   },
   "dependencies": {
