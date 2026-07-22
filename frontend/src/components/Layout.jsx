@@ -33,12 +33,6 @@ export default function Layout({ children }) {
               <Link to="/" className="text-xl font-bold text-indigo-600">ACMS</Link>
             </div>
             <div className="flex items-center gap-4">
-              <Link
-                to="/change-password"
-                className="text-sm text-gray-500 hover:text-indigo-600 font-medium"
-              >
-                Change Password
-              </Link>
               <span className="text-sm text-gray-600 hidden sm:block">
                 {user?.name}
                 <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">

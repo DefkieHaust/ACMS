@@ -19,8 +19,8 @@ import ComplaintsPage from './pages/ComplaintsPage';
 import VisitorsPage from './pages/VisitorsPage';
 import NoticesPage from './pages/NoticesPage';
 import ResidentDashboard from './pages/ResidentDashboard';
-import ChangePasswordPage from './pages/ChangePasswordPage';
 import AccountManagementPage from './pages/AccountManagementPage';
+import AccountPage from './pages/AccountPage';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, user } = useAuth();
@@ -72,7 +72,7 @@ export default function App() {
       <Route path="/bills" element={<ProtectedRoute><RoleRoute roles={['committee_head', 'resident']}><BillsPage /></RoleRoute></ProtectedRoute>} />
       <Route path="/complaints" element={<ProtectedRoute><RoleRoute roles={['committee_head', 'committee_member', 'resident']}><ComplaintsPage /></RoleRoute></ProtectedRoute>} />
       <Route path="/visitors" element={<ProtectedRoute><RoleRoute roles={['committee_member', 'committee_head']}><VisitorsPage /></RoleRoute></ProtectedRoute>} />
-      <Route path="/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+      <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
 
       <Route path="/admin/dashboard" element={<AdminProtectedRoute><SiteAdminDashboard /></AdminProtectedRoute>} />
       <Route path="/admin/apartments" element={<AdminProtectedRoute><ApartmentsPage /></AdminProtectedRoute>} />

@@ -63,6 +63,17 @@ export default function ApartmentsPage() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this apartment permanently? This cannot be undone.')) return;
+    try {
+      await api.delete(`/admin/apartments/${id}`);
+      toast.success('Apartment deleted');
+      setApartments(apartments.filter((a) => a._id !== id));
+    } catch (err) {
+      toast.error('Failed to delete apartment');
+    }
+  };
+
   const createAdmin = async (e) => {
     e.preventDefault();
     try {
@@ -110,6 +121,7 @@ export default function ApartmentsPage() {
                 </td>
                 <td className="px-6 py-4 text-right space-x-2">
                   <button onClick={() => openEdit(a)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+                  <button onClick={() => handleDelete(a._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
                   <button onClick={() => { setSelectedApt(a); setAdminForm({ name: '', identifier: '', password: '' }); setAdminOpen(true); }} className="text-sm text-green-600 hover:text-green-800 font-medium">Create Admin</button>
                 </td>
               </tr>

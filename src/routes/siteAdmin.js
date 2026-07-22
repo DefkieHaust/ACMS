@@ -192,3 +192,60 @@ router.get('/invoices/generate', audit('create', 'invoice_generation'), async (r
 });
 
 export default router;
+
+router.get('/accounts', async (req, res) => {
+  try {
+    const users = await User.find({ type: { $ne: ROLES.SITE_ADMIN } })
+      .select('-passwordHash')
+      .populate('apartmentId', 'name')
+      .sort({ type: 1, name: 1 });
+    res.json({ success: true, data: users });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch accounts' });
+  }
+});
+
+router.post('/accounts', validate(createUserSchema), audit('create', 'account'), async (req, res) => {
+  try {
+    const { apartmentId, type, name, identifier, password, phone, identityNumber, residence } = req.validatedBody;
+    if (!apartmentId) return res.status(400).json({ success: false, error: 'apartmentId is required' });
+    if (!['apartment_admin', 'resident'].includes(type)) {
+      return res.status(400).json({ success: false, error: 'Type must be apartment_admin or resident' });
+    }
+    const apartment = await Apartment.findById(apartmentId);
+    if (!apartment) return res.status(404).json({ success: false, error: 'Apartment not found' });
+    const existing = await User.findOne({ apartmentId, type, identifier });
+    if (existing) return res.status(409).json({ success: false, error: 'Account with this identifier already exists' });
+    const passwordHash = await hashPassword(password);
+    const user = await User.create({ apartmentId, type, name, identifier, passwordHash, phone, identityNumber, residence });
+    res.status(201).json({ success: true, data: { _id: user._id, name: user.name, identifier: user.identifier, type: user.type } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to create account' });
+  }
+});
+
+router.put('/accounts/:id', audit('update', 'account'), async (req, res) => {
+  try {
+    const allowed = ['type', 'apartmentId', 'status'];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    if (update.apartmentId === '') update.apartmentId = null;
+    const user = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select('-passwordHash').populate('apartmentId', 'name');
+    if (!user) return res.status(404).json({ success: false, error: 'Account not found' });
+    res.json({ success: true, data: user });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to update account' });
+  }
+});
+
+router.delete('/accounts/:id', audit('delete', 'account'), async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ success: false, error: 'Account not found' });
+    res.json({ success: true, data: { message: 'Account deleted' } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to delete account' });
+  }
+});

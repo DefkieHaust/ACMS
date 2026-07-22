@@ -41,7 +41,6 @@ export const NAV_ITEMS = {
     { label: 'Plans', path: '/admin/plans' },
     { label: 'SaaS Invoices', path: '/admin/invoices' },
     { label: 'Account Management', path: '/admin/account-management' },
-    { label: 'Change Password', path: '/change-password' },
   ],
   apartment_admin: [
     { label: 'Dashboard', path: '/' },
@@ -50,7 +49,7 @@ export const NAV_ITEMS = {
     { label: 'Committees', path: '/committees' },
     { label: 'Invoices', path: '/invoices' },
     { label: 'Notices', path: '/notices' },
-    { label: 'Change Password', path: '/change-password' },
+    { label: 'My Account', path: '/account' },
   ],
   committee_head: [
     { label: 'Dashboard', path: '/' },
@@ -59,19 +58,19 @@ export const NAV_ITEMS = {
     { label: 'Bills', path: '/bills' },
     { label: 'Complaints', path: '/complaints' },
     { label: 'Notices', path: '/notices' },
-    { label: 'Change Password', path: '/change-password' },
+    { label: 'My Account', path: '/account' },
   ],
   committee_member: [
     { label: 'Dashboard', path: '/' },
     { label: 'Visitor Log', path: '/visitors' },
     { label: 'Complaints', path: '/complaints' },
-    { label: 'Change Password', path: '/change-password' },
+    { label: 'My Account', path: '/account' },
   ],
   resident: [
     { label: 'Dashboard', path: '/' },
     { label: 'My Bills', path: '/bills' },
     { label: 'Complaints', path: '/complaints' },
     { label: 'Notices', path: '/notices' },
-    { label: 'Change Password', path: '/change-password' },
+    { label: 'My Account', path: '/account' },
   ],
 };
