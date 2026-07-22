@@ -3,11 +3,14 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import { config } from './config/index.js';
-import { connectDB } from './config/db.js';
+import { validateEnv } from './config/validate.js';
+import { connectDB, disconnectDB } from './config/db.js';
 import { startInvoiceCron } from './cron.js';
 import { seedIfNeeded } from './seed.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
+import { requestLogger } from './middleware/logger.js';
 
 import authRoutes from './routes/auth.js';
 import siteAdminRoutes from './routes/siteAdmin.js';
@@ -37,11 +40,16 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:5173', 'http://localhost:5000'];
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? allowedOrigins : true,
+  credentials: true,
+}));
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(frontendDist));
 
+app.use(requestLogger);
 app.use('/api', apiLimiter);
 
 app.use('/api/auth', authRoutes);
@@ -63,7 +71,17 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
+  const dbState = mongoose.connection.readyState;
+  const dbStatus = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  res.json({
+    status: dbState === 1 ? 'ok' : 'degraded',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    db: dbStatus[dbState] || 'unknown',
+    node: process.version,
+    env: process.env.NODE_ENV || 'development',
+  });
 });
 
 app.get('*', (req, res) => {
@@ -75,14 +93,36 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, error: 'Internal server error' });
 });
 
+let server;
+
+function gracefulShutdown(signal) {
+  console.log(`\n[${signal}] Shutting down gracefully...`);
+  if (server) {
+    server.close(async () => {
+      await disconnectDB();
+      console.log('Server closed');
+      process.exit(0);
+    });
+    setTimeout(() => {
+      console.error('Forced shutdown after 10s timeout');
+      process.exit(1);
+    }, 10000);
+  } else {
+    process.exit(0);
+  }
+}
+
 async function start() {
+  validateEnv();
   try {
     await connectDB();
     await seedIfNeeded();
     startInvoiceCron();
-    app.listen(config.port, () => {
+    server = app.listen(config.port, () => {
       console.log(`ACMS backend running on port ${config.port}`);
     });
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   } catch (err) {
     console.error('\nFailed to start server:', err.message);
     if (err.message.includes('ECONNREFUSED')) {
