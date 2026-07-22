@@ -16,8 +16,11 @@ export default function AccountManagementPage() {
   const [pwOpen, setPwOpen] = useState(false);
   const [changeOwnPw, setChangeOwnPw] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
-  const fetchAccounts = () => {
-    api.get('/admin/accounts').then((r) => {
+  const [search, setSearch] = useState('');
+
+  const fetchAccounts = (q) => {
+    const query = q !== undefined ? q : search;
+    api.get('/admin/accounts' + (query ? `?search=${encodeURIComponent(query)}` : '')).then((r) => {
       setAccounts(r.data || []);
     }).catch(() => {});
   };
@@ -138,6 +141,10 @@ export default function AccountManagementPage() {
           <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Create Account</button>
         </div>
 
+        <div className="mb-4">
+          <input type="text" placeholder="Search accounts..." value={search} onChange={(e) => { setSearch(e.target.value); fetchAccounts(e.target.value); }} className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
+        </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
@@ -162,10 +169,12 @@ export default function AccountManagementPage() {
                   <td className="px-6 py-4">
                     <button onClick={() => toggleStatus(a)} className={`px-2 py-1 text-xs font-medium rounded-full ${a.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{a.status}</button>
                   </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => openEdit(a)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
-                    <button onClick={() => openChangePassword(a)} className="text-sm text-yellow-600 hover:text-yellow-800 font-medium">Password</button>
-                    <button onClick={() => handleDelete(a._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex flex-col gap-1 items-end">
+                      <button onClick={() => openEdit(a)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+                      <button onClick={() => openChangePassword(a)} className="text-sm text-yellow-600 hover:text-yellow-800 font-medium">Password</button>
+                      <button onClick={() => handleDelete(a._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}

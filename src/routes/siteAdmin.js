@@ -231,7 +231,15 @@ export default router;
 
 router.get('/accounts', async (req, res) => {
   try {
-    const users = await User.find({ type: { $ne: ROLES.SITE_ADMIN } })
+    const { search } = req.query;
+    let filter = { type: { $ne: ROLES.SITE_ADMIN } };
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { identifier: { $regex: search, $options: 'i' } },
+      ];
+    }
+    const users = await User.find(filter)
       .select('-passwordHash')
       .populate('apartmentId', 'name')
       .sort({ type: 1, name: 1 });
