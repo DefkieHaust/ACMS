@@ -23,6 +23,11 @@ const NoticesPage = lazy(() => import('./pages/NoticesPage'));
 const ResidentDashboard = lazy(() => import('./pages/ResidentDashboard'));
 const AccountManagementPage = lazy(() => import('./pages/AccountManagementPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
+const FacilitiesPage = lazy(() => import('./pages/FacilitiesPage'));
+const BookingsPage = lazy(() => import('./pages/BookingsPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
+const ServiceRequestsPage = lazy(() => import('./pages/ServiceRequestsPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageLoading() {
@@ -81,6 +86,11 @@ export default function App() {
         <Route path="/complaints" element={<ProtectedRoute><RoleRoute roles={['committee_head', 'committee_member', 'resident']}><ComplaintsPage /></RoleRoute></ProtectedRoute>} />
         <Route path="/visitors" element={<ProtectedRoute><RoleRoute roles={['committee_member', 'committee_head']}><VisitorsPage /></RoleRoute></ProtectedRoute>} />
         <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
+        <Route path="/facilities" element={<ProtectedRoute><RoleRoute roles={['apartment_admin']}><FacilitiesPage /></RoleRoute></ProtectedRoute>} />
+        <Route path="/bookings" element={<ProtectedRoute><RoleRoute roles={['resident']}><BookingsPage /></RoleRoute></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+        <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
+        <Route path="/service-requests" element={<ProtectedRoute><RoleRoute roles={['apartment_admin', 'resident']}><ServiceRequestsPage /></RoleRoute></ProtectedRoute>} />
 
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><SiteAdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/apartments" element={<AdminProtectedRoute><ApartmentsPage /></AdminProtectedRoute>} />

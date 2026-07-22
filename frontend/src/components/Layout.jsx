@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { NAV_ITEMS, ROLE_LABELS } from '../utils/constants';
+import NotificationBell from './NotificationBell';
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -32,7 +33,8 @@ export default function Layout({ children }) {
               </button>
               <Link to="/" className="text-xl font-bold text-indigo-600">ACMS</Link>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <NotificationBell />
               <span className="text-sm text-gray-600 hidden sm:block">
                 {user?.name}
                 <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">

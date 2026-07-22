@@ -11,3 +11,8 @@ export { default as VisitorLog } from './VisitorLog.js';
 export { default as Notice } from './Notice.js';
 export { default as AuditLog } from './AuditLog.js';
 export { default as CustomRole } from './CustomRole.js';
+export { default as Facility } from './Facility.js';
+export { default as FacilityBooking } from './FacilityBooking.js';
+export { default as Notification } from './Notification.js';
+export { default as Document } from './Document.js';
+export { default as ServiceRequest } from './ServiceRequest.js';

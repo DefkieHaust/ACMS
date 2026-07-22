@@ -20,6 +20,11 @@ import dashboardRoutes from './routes/dashboards.js';
 import userRoutes from './routes/users.js';
 import exportRoutes from './routes/export.js';
 import uploadRoutes from './routes/uploads.js';
+import facilityRoutes from './routes/facilities.js';
+import notificationRoutes from './routes/notifications.js';
+import documentRoutes from './routes/documents.js';
+import serviceRequestRoutes from './routes/serviceRequests.js';
+import paymentRoutes from './routes/payments.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
@@ -49,6 +54,11 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/facilities', facilityRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/service-requests', serviceRequestRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });

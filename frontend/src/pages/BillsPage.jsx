@@ -3,6 +3,7 @@ import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
+import PaymentModal from '../components/PaymentModal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 
@@ -16,6 +17,8 @@ export default function BillsPage() {
   const [selectedCommittee, setSelectedCommittee] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ amount: '', period: '', dueDate: '' });
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [payingBill, setPayingBill] = useState(null);
 
   useEffect(() => {
     if (!isResident) {
@@ -83,15 +86,15 @@ export default function BillsPage() {
     }
   };
 
-  const payBill = async (billId) => {
-    try {
-      await api.put(`/committees/bills/${billId}/pay`);
-      toast.success('Bill paid');
-      const r = await api.get('/dashboard/resident');
-      setBills(r.data.bills || []);
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to pay bill');
-    }
+  const payBill = (bill) => {
+    setPayingBill(bill);
+    setPayModalOpen(true);
+  };
+
+  const handlePaySuccess = async () => {
+    const r = await api.get('/dashboard/resident');
+    setBills(r.data.bills || []);
+    setPayingBill(null);
   };
 
   if (loading) return <LoadingSkeleton lines={8} />;
@@ -147,7 +150,7 @@ export default function BillsPage() {
                 {isResident && (
                   <td className="px-6 py-4 text-right">
                     {b.status === 'unpaid' && (
-                      <button onClick={() => payBill(b._id)} className="text-sm text-green-600 hover:text-green-800 font-medium">Pay Now</button>
+                      <button onClick={() => payBill(b)} className="text-sm text-green-600 hover:text-green-800 font-medium">Pay Now</button>
                     )}
                   </td>
                 )}
@@ -179,6 +182,17 @@ export default function BillsPage() {
           </div>
         </form>
       </Modal>
+
+      {payingBill && (
+        <PaymentModal
+          open={payModalOpen}
+          onClose={() => { setPayModalOpen(false); setPayingBill(null); }}
+          amount={payingBill.amount}
+          currency={payingBill.currency || 'USD'}
+          billId={payingBill._id}
+          onSuccess={handlePaySuccess}
+        />
+      )}
     </div>
   );
 }

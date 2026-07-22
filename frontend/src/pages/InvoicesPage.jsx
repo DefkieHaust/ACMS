@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import PaymentModal from '../components/PaymentModal';
 import toast from 'react-hot-toast';
 
 export default function InvoicesPage() {
@@ -10,6 +11,8 @@ export default function InvoicesPage() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [payingInvoice, setPayingInvoice] = useState(null);
 
   const fetchInvoices = () => {
     setLoading(true);
@@ -26,14 +29,14 @@ export default function InvoicesPage() {
 
   useEffect(() => { fetchInvoices(); }, []);
 
-  const markPaid = async (id) => {
-    try {
-      await api.put(`/admin/invoices/${id}/mark-paid`, { status: 'paid' });
-      toast.success('Invoice marked as paid');
-      fetchInvoices();
-    } catch (err) {
-      toast.error('Failed to update invoice');
-    }
+  const markPaid = (inv) => {
+    setPayingInvoice(inv);
+    setPayModalOpen(true);
+  };
+
+  const handlePaySuccess = () => {
+    fetchInvoices();
+    setPayingInvoice(null);
   };
 
   const handleExport = async () => {
@@ -108,7 +111,7 @@ export default function InvoicesPage() {
                 {isSiteAdmin && (
                   <td className="px-6 py-4 text-right">
                     {inv.status === 'unpaid' && (
-                      <button onClick={() => markPaid(inv._id)} className="text-sm text-green-600 hover:text-green-800 font-medium">Mark Paid</button>
+                      <button onClick={() => markPaid(inv)} className="text-sm text-green-600 hover:text-green-800 font-medium">Mark Paid</button>
                     )}
                   </td>
                 )}
@@ -118,6 +121,17 @@ export default function InvoicesPage() {
         </table>
         {invoices.length === 0 && <p className="text-center text-gray-500 py-8">No invoices yet</p>}
       </div>
+
+      {payingInvoice && (
+        <PaymentModal
+          open={payModalOpen}
+          onClose={() => { setPayModalOpen(false); setPayingInvoice(null); }}
+          amount={payingInvoice.amount}
+          currency={payingInvoice.currency || 'USD'}
+          invoiceId={payingInvoice._id}
+          onSuccess={handlePaySuccess}
+        />
+      )}
     </div>
   );
 }
