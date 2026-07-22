@@ -157,6 +157,42 @@ router.put('/invoices/:id/mark-paid', validate(markInvoicePaidSchema), audit('up
   }
 });
 
+router.get('/invoices/export', async (req, res) => {
+  try {
+    const invoices = await SaaSInvoice.find({})
+      .populate('apartmentId', 'name')
+      .populate('planId', 'name')
+      .lean();
+
+    const headers = ['apartment', 'period', 'plan', 'amount', 'currency', 'status', 'dueDate'];
+    const rows = invoices.map(inv => ({
+      apartment: inv.apartmentId?.name || '',
+      period: inv.period,
+      plan: inv.planId?.name || '',
+      amount: inv.amount ?? '',
+      currency: inv.currency || '',
+      status: inv.status,
+      dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString() : '',
+    }));
+
+    const headerLine = headers.join(',');
+    const dataLines = rows.map(row =>
+      headers.map(h => {
+        const val = row[h] ?? '';
+        const str = String(val).replace(/"/g, '""');
+        return `"${str}"`;
+      }).join(',')
+    );
+    const csv = [headerLine, ...dataLines].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=invoices.csv');
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Export failed' });
+  }
+});
+
 router.get('/invoices/generate', audit('create', 'invoice_generation'), async (req, res) => {
   try {
     const apartments = await Apartment.find({ status: 'active', planId: { $ne: null } });

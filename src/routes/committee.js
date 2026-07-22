@@ -160,6 +160,18 @@ router.post('/:id/members', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMI
   }
 });
 
+router.put('/:committeeId/members/:memberId', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (role && ['committee_member', 'committee_head'].includes(role)) {
+      await User.findByIdAndUpdate(req.params.memberId, { type: role });
+    }
+    res.json({ success: true, data: { message: 'Role updated' } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to update member role' });
+  }
+});
+
 router.put('/:committeeId/members/:memberId/role', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), async (req, res) => {
   try {
     const { customRole } = req.body;

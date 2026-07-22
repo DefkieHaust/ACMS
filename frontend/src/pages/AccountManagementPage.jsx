@@ -119,7 +119,7 @@ export default function AccountManagementPage() {
       return;
     }
     try {
-      await api.put('/auth/change-password', { currentPassword: changeOwnPw.currentPassword, newPassword: changeOwnPw.newPassword });
+      await api.post('/auth/change-password', { currentPassword: changeOwnPw.currentPassword, newPassword: changeOwnPw.newPassword });
       toast.success('Password changed');
       setChangeOwnPw({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
