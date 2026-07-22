@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/constants';
@@ -133,7 +134,7 @@ export default function BillsPage() {
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Amount</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Due Date</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-              {isResident && <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Action</th>}
+                  {isResident && <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase" colSpan={2}>Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -151,6 +152,13 @@ export default function BillsPage() {
                   <td className="px-6 py-4 text-right">
                     {b.status === 'unpaid' && (
                       <button onClick={() => payBill(b)} className="text-sm text-green-600 hover:text-green-800 font-medium">Pay Now</button>
+                    )}
+                  </td>
+                )}
+                {isResident && (
+                  <td className="px-6 py-4 text-right">
+                    {b.status === 'paid' && (
+                      <Link to={`/receipt/${b._id}`} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Receipt</Link>
                     )}
                   </td>
                 )}

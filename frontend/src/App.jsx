@@ -30,6 +30,7 @@ const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
 const ServiceRequestsPage = lazy(() => import('./pages/ServiceRequestsPage'));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
 const PaymentHistoryPage = lazy(() => import('./pages/PaymentHistoryPage'));
+const ReceiptPage = lazy(() => import('./pages/ReceiptPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageLoading() {
@@ -94,6 +95,7 @@ export default function App() {
         <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
         <Route path="/service-requests" element={<ProtectedRoute><RoleRoute roles={['apartment_admin', 'resident']}><ServiceRequestsPage /></RoleRoute></ProtectedRoute>} />
         <Route path="/payment-history" element={<ProtectedRoute><RoleRoute roles={['apartment_admin', 'resident']}><PaymentHistoryPage /></RoleRoute></ProtectedRoute>} />
+        <Route path="/receipt/:billId" element={<ProtectedRoute><RoleRoute roles={['resident']}><ReceiptPage /></RoleRoute></ProtectedRoute>} />
 
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><SiteAdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/apartments" element={<AdminProtectedRoute><ApartmentsPage /></AdminProtectedRoute>} />
