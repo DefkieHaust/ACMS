@@ -12,7 +12,7 @@ export default function ApartmentsPage() {
   const [editItem, setEditItem] = useState(null);
   const [selectedApt, setSelectedApt] = useState(null);
   const [form, setForm] = useState({ name: '', address: '', planId: '' });
-  const [adminForm, setAdminForm] = useState({ name: '', identifier: '', password: '' });
+  const [adminForm, setAdminForm] = useState({ name: '', identifier: '', password: '', phone: '', identityNumber: '' });
   const [search, setSearch] = useState('');
 
   const fetchApartments = (q) => {
@@ -81,10 +81,19 @@ export default function ApartmentsPage() {
   const createAdmin = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/admin/apartment-admins', { ...adminForm, apartmentId: selectedApt._id, type: 'apartment_admin' });
+      const payload = {
+        name: adminForm.name,
+        identifier: adminForm.identifier,
+        password: adminForm.password,
+        phone: adminForm.phone ? adminForm.phone.split(',').map(p => p.trim()) : [],
+        identityNumber: adminForm.identityNumber || undefined,
+        apartmentId: selectedApt._id,
+        type: 'apartment_admin',
+      };
+      await api.post('/admin/apartment-admins', payload);
       toast.success(`Admin created for ${selectedApt.name}`);
       setAdminOpen(false);
-      setAdminForm({ name: '', identifier: '', password: '' });
+      setAdminForm({ name: '', identifier: '', password: '', phone: '', identityNumber: '' });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create admin');
     }
@@ -202,6 +211,14 @@ export default function ApartmentsPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input type="password" required value={adminForm.password} onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number(s) (comma separated)</label>
+            <input type="text" value={adminForm.phone} onChange={(e) => setAdminForm({ ...adminForm, phone: e.target.value })} placeholder="e.g. +1234567890" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Identity Number</label>
+            <input type="text" value={adminForm.identityNumber} onChange={(e) => setAdminForm({ ...adminForm, identityNumber: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Create Admin</button>

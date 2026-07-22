@@ -12,7 +12,7 @@ export default function ComplaintsPage() {
   const [complaints, setComplaints] = useState([]);
   const [committees, setCommittees] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ committeeId: '', description: '' });
+  const [form, setForm] = useState({ committeeId: '', title: '', description: '' });
 
   useEffect(() => {
     fetchComplaints();
@@ -74,6 +74,7 @@ export default function ComplaintsPage() {
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Title</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Description</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Unit</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Committee</th>
@@ -86,7 +87,8 @@ export default function ComplaintsPage() {
             {complaints.map((c) => (
               <tr key={c._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 text-gray-600">{new Date(c.createdAt).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-gray-900 max-w-xs truncate">{c.description}</td>
+                <td className="px-6 py-4 text-gray-900 font-medium max-w-xs truncate">{c.title || '-'}</td>
+                <td className="px-6 py-4 text-gray-600 max-w-xs truncate">{c.description}</td>
                 <td className="px-6 py-4 text-gray-600">{c.raisedByUnitId?.unitNumber}</td>
                 <td className="px-6 py-4 text-gray-600">{c.committeeId?.name}</td>
                 <td className="px-6 py-4">
@@ -121,6 +123,10 @@ export default function ComplaintsPage() {
               <option value="">Select committee</option>
               {committees.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Brief title for your complaint" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>

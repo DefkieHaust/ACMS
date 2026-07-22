@@ -43,7 +43,7 @@ export const createUserSchema = z.object({
   name: z.string().min(1),
   identifier: z.string().min(1),
   password: z.string().min(6),
-  phone: z.array(z.string()).optional(),
+  phone: z.union([z.array(z.string()), z.string()]).optional().transform(v => Array.isArray(v) ? v : v ? [v] : []),
   identityNumber: z.string().optional(),
   residence: z.string().optional(),
 });
@@ -123,6 +123,7 @@ export const generateBillsSchema = z.object({
 
 export const createComplaintSchema = z.object({
   committeeId: z.string().min(1),
+  title: z.string().optional(),
   description: z.string().min(1),
 });
 

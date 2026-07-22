@@ -35,7 +35,7 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
         apartmentId: apartment._id,
         type,
         identifier,
-      }).populate('unitId committeeId');
+      }).populate('unitId');
 
       if (!user) return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }

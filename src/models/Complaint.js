@@ -4,6 +4,7 @@ const complaintSchema = new mongoose.Schema({
   apartmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Apartment', required: true },
   committeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Committee', required: true },
   raisedByUnitId: { type: mongoose.Schema.Types.ObjectId, ref: 'Unit', required: true },
+  title: { type: String, default: '' },
   description: { type: String, required: true },
   status: { type: String, enum: ['open', 'in_progress', 'resolved'], default: 'open' },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

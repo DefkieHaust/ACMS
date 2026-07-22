@@ -45,6 +45,7 @@ router.post('/', validate(createComplaintSchema), async (req, res) => {
       apartmentId: req.apartmentId,
       committeeId: req.validatedBody.committeeId,
       raisedByUnitId: unit._id,
+      title: req.validatedBody.title || '',
       description: req.validatedBody.description,
     });
     res.status(201).json({ success: true, data: complaint });

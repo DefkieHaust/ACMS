@@ -15,16 +15,19 @@ export default function CommitteeHeadDashboard() {
 
   const isMember = user?.type === ROLES.COMMITTEE_MEMBER;
 
+  const c = data.currency || '$';
+  const fmt = (n) => n?.toLocaleString() || 0;
+
   const stats = isMember ? [
     { label: 'Committee', value: data.committee?.name || '-' },
     { label: 'Open Complaints', value: data.openComplaints },
   ] : [
     { label: 'Members', value: data.members },
-    { label: 'Income', value: `${data.currency || '$'}{data.totalIncome?.toLocaleString() || 0}` },
-    { label: 'Expenses', value: `${data.currency || '$'}{data.totalExpense?.toLocaleString() || 0}` },
-    { label: 'Balance', value: `${data.currency || '$'}{data.balance?.toLocaleString() || 0}` },
+    { label: 'Income', value: `${c}${fmt(data.totalIncome)}` },
+    { label: 'Expenses', value: `${c}${fmt(data.totalExpense)}` },
+    { label: 'Balance', value: `${c}${fmt(data.balance)}` },
     { label: 'Complaints', value: data.totalComplaints, sub: `${data.openComplaints} open` },
-    { label: 'Bills', value: `${data.currency || '$'}{data.totalBills?.toLocaleString() || 0}`, sub: `${data.currency || '$'}{data.unpaidBills?.toLocaleString() || 0} unpaid` },
+    { label: 'Bills', value: `${c}${fmt(data.totalBills)}`, sub: `${c}${fmt(data.unpaidBills)} unpaid` },
   ];
 
   return (

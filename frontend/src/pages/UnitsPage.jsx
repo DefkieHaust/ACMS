@@ -30,12 +30,14 @@ export default function UnitsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const payload = { ...form };
+    if (!payload.ownerId) delete payload.ownerId;
     try {
       if (editItem) {
-        await api.put(`/apartment/units/${editItem._id}`, form);
+        await api.put(`/apartment/units/${editItem._id}`, payload);
         toast.success('Unit updated');
       } else {
-        await api.post('/apartment/units', form);
+        await api.post('/apartment/units', payload);
         toast.success('Unit created');
       }
       setModalOpen(false);

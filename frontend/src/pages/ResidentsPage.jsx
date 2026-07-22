@@ -35,7 +35,7 @@ export default function ResidentsPage() {
         await api.put(`/apartment/residents/${editItem._id}`, { name: form.name, unitId: form.unitId || null, residentType: form.residentType, phone: form.phone ? form.phone.split(',').map(p => p.trim()) : [], identityNumber: form.identityNumber });
         toast.success('Resident updated');
       } else {
-        await api.post('/apartment/residents', { ...form, type: 'resident' });
+        await api.post('/apartment/residents', { ...form, phone: form.phone ? form.phone.split(',').map(p => p.trim()) : [], type: 'resident' });
         toast.success('Resident created');
       }
       setEditOpen(false);
