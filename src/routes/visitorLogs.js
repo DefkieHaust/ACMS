@@ -4,6 +4,7 @@ import { validate } from '../middleware/validate.js';
 import { createVisitorLogSchema } from '../utils/validate.js';
 import { VisitorLog } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
+import { getPagination } from '../utils/helpers.js';
 
 const router = Router();
 router.use(authenticate, tenantIsolation);
@@ -14,10 +15,15 @@ router.get('/', async (req, res) => {
     if (req.user.type === ROLES.COMMITTEE_MEMBER || req.user.type === ROLES.COMMITTEE_HEAD) {
       filter.loggedBy = req.user.userId;
     }
-    const logs = await VisitorLog.find(filter)
-      .populate('loggedBy', 'name')
-      .sort({ checkIn: -1 });
-    res.json({ success: true, data: logs });
+    const { page, limit, skip } = getPagination(req.query);
+    const [logs, total] = await Promise.all([
+      VisitorLog.find(filter)
+        .populate('loggedBy', 'name')
+        .sort({ checkIn: -1 })
+        .skip(skip).limit(limit),
+      VisitorLog.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: logs, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch visitor logs' });
   }

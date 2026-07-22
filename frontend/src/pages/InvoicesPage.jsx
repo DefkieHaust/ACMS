@@ -1,16 +1,27 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 
 export default function InvoicesPage() {
   const { user } = useAuth();
   const isSiteAdmin = user?.type === 'site_admin';
   const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchInvoices = () => {
+    setLoading(true);
+    setError(null);
     const endpoint = isSiteAdmin ? '/admin/invoices' : '/apartment/invoices';
-    api.get(endpoint).then((r) => setInvoices(r.data));
+    api.get(endpoint)
+      .then((r) => setInvoices(r.data))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load invoices');
+        toast.error('Failed to load invoices');
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchInvoices(); }, []);
@@ -49,6 +60,8 @@ export default function InvoicesPage() {
     }
   };
 
+  if (loading) return <LoadingSkeleton lines={8} />;
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -60,6 +73,13 @@ export default function InvoicesPage() {
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={fetchInvoices} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full">

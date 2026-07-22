@@ -2,17 +2,28 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
+import PageLoading from '../components/PageLoading';
 import toast from 'react-hot-toast';
 
 export default function LedgerPage() {
   const { user } = useAuth();
   const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ type: 'income', amount: '', description: '' });
 
   const fetchEntries = () => {
     if (user?.committeeId) {
-      api.get(`/committees/${user.committeeId}/ledger`).then((r) => setEntries(r.data));
+      setLoading(true);
+      setError(null);
+      api.get(`/committees/${user.committeeId}/ledger`)
+        .then((r) => setEntries(r.data))
+        .catch((e) => {
+          setError(e.response?.data?.error || 'Failed to load ledger');
+          toast.error('Failed to load ledger');
+        })
+        .finally(() => setLoading(false));
     }
   };
 
@@ -34,12 +45,21 @@ export default function LedgerPage() {
   const totalIncome = entries.filter((e) => e.type === 'income').reduce((s, e) => s + e.amount, 0);
   const totalExpense = entries.filter((e) => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
 
+  if (loading) return <PageLoading />;
+
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Committee Ledger</h1>
         <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Entry</button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={fetchEntries} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">

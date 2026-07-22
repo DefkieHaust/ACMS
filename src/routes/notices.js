@@ -1,9 +1,11 @@
+import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { createNoticeSchema } from '../utils/validate.js';
 import { Notice } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
+import { getPagination } from '../utils/helpers.js';
 
 const router = Router();
 router.use(authenticate, tenantIsolation);
@@ -22,11 +24,16 @@ router.get('/', async (req, res) => {
       };
     }
 
-    const notices = await Notice.find(filter)
-      .populate('postedBy', 'name')
-      .populate('committeeId', 'name')
-      .sort({ createdAt: -1 });
-    res.json({ success: true, data: notices });
+    const { page, limit, skip } = getPagination(req.query);
+    const [notices, total] = await Promise.all([
+      Notice.find(filter)
+        .populate('postedBy', 'name')
+        .populate('committeeId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip).limit(limit),
+      Notice.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: notices, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch notices' });
   }
@@ -60,6 +67,7 @@ router.post('/', validate(createNoticeSchema), async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const notice = await Notice.findOneAndDelete({
       _id: req.params.id,
       apartmentId: req.apartmentId,

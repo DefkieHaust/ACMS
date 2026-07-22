@@ -1,12 +1,52 @@
+import { useEffect, useRef, useState } from 'react';
+
 export default function Modal({ open, onClose, title, children }) {
-  if (!open) return null;
+  const [mounted, setMounted] = useState(false);
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      document.body.style.overflow = 'hidden';
+      const timer = setTimeout(() => {
+        const el = contentRef.current;
+        if (el) {
+          const focusable = el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+          if (focusable.length > 0) focusable[0].focus();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      document.body.style.overflow = '';
+      const timer = setTimeout(() => setMounted(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
+
+  if (!mounted && !open) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black bg-opacity-40" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${open ? 'animate-fade-in' : 'opacity-0'}`}>
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div
+        ref={contentRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto p-8"
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h2 id="modal-title" className="text-xl font-semibold text-gray-900">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-lg p-1 hover:bg-gray-100 transition-colors" aria-label="Close modal">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>

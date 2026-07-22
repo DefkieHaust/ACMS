@@ -1,7 +1,9 @@
+import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { createComplaintSchema, updateComplaintSchema } from '../utils/validate.js';
+import { getPagination } from '../utils/helpers.js';
 import { Complaint, Unit, Committee } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
 
@@ -19,12 +21,17 @@ router.get('/', async (req, res) => {
       filter.committeeId = req.user.committeeId;
     }
 
-    const complaints = await Complaint.find(filter)
-      .populate('raisedByUnitId', 'unitNumber')
-      .populate('committeeId', 'name')
-      .populate('assignedTo', 'name')
-      .sort({ createdAt: -1 });
-    res.json({ success: true, data: complaints });
+    const { page, limit, skip } = getPagination(req.query);
+    const [complaints, total] = await Promise.all([
+      Complaint.find(filter)
+        .populate('raisedByUnitId', 'unitNumber')
+        .populate('committeeId', 'name')
+        .populate('assignedTo', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip).limit(limit),
+      Complaint.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: complaints, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch complaints' });
   }
@@ -56,6 +63,7 @@ router.post('/', validate(createComplaintSchema), async (req, res) => {
 
 router.put('/:id', validate(updateComplaintSchema), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     let filter = { _id: req.params.id, apartmentId: req.apartmentId };
     if (req.user.type === ROLES.COMMITTEE_HEAD || req.user.type === ROLES.COMMITTEE_MEMBER) {
       filter.committeeId = req.user.committeeId;
@@ -76,6 +84,7 @@ router.put('/:id', validate(updateComplaintSchema), async (req, res) => {
 
 router.put('/:id/rate', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { rating } = req.body;
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({ success: false, error: 'Rating must be between 1 and 5' });

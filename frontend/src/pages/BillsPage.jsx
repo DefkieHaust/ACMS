@@ -3,6 +3,7 @@ import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 
 export default function BillsPage() {
@@ -10,29 +11,58 @@ export default function BillsPage() {
   const isResident = user?.type === ROLES.RESIDENT;
   const [committees, setCommittees] = useState([]);
   const [bills, setBills] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedCommittee, setSelectedCommittee] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ amount: '', period: '', dueDate: '' });
 
   useEffect(() => {
     if (!isResident) {
-      api.get('/committees').then((r) => setCommittees(r.data));
+      api.get('/committees')
+        .then((r) => setCommittees(r.data))
+        .catch(() => {});
     }
   }, []);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     if (isResident) {
-      api.get('/dashboard/resident').then((r) => setBills(r.data.bills || []));
+      api.get('/dashboard/resident')
+        .then((r) => setBills(r.data.bills || []))
+        .catch((e) => {
+          setError(e.response?.data?.error || 'Failed to load bills');
+          toast.error('Failed to load bills');
+        })
+        .finally(() => setLoading(false));
     } else if (user?.committeeId) {
-      api.get(`/committees/${user.committeeId}/bills`).then((r) => setBills(r.data));
+      api.get(`/committees/${user.committeeId}/bills`)
+        .then((r) => setBills(r.data))
+        .catch((e) => {
+          setError(e.response?.data?.error || 'Failed to load bills');
+          toast.error('Failed to load bills');
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, [user?.committeeId]);
 
   const fetchBillsForCommittee = (committeeId) => {
+    setLoading(true);
+    setError(null);
     if (committeeId) {
-      api.get(`/committees/${committeeId}/bills`).then((r) => setBills(r.data));
+      api.get(`/committees/${committeeId}/bills`)
+        .then((r) => setBills(r.data))
+        .catch((e) => {
+          setError(e.response?.data?.error || 'Failed to load bills');
+          toast.error('Failed to load bills');
+        })
+        .finally(() => setLoading(false));
     } else {
       setBills([]);
+      setLoading(false);
     }
   };
 
@@ -64,6 +94,8 @@ export default function BillsPage() {
     }
   };
 
+  if (loading) return <LoadingSkeleton lines={8} />;
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -80,6 +112,13 @@ export default function BillsPage() {
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full">

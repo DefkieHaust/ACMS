@@ -1,14 +1,27 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 
 export default function VisitorsPage() {
   const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ visitorName: '', purpose: '', unitVisited: '' });
 
-  useEffect(() => { api.get('/visitors').then((r) => setLogs(r.data)); }, []);
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    api.get('/visitors')
+      .then((r) => setLogs(r.data))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load visitor logs');
+        toast.error('Failed to load visitor logs');
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,12 +48,21 @@ export default function VisitorsPage() {
     }
   };
 
+  if (loading) return <LoadingSkeleton lines={8} />;
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Visitor Log</h1>
         <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Log Visitor</button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full">

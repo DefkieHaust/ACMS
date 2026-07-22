@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, authorize, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -8,7 +9,7 @@ import {
   createUserSchema,
   markInvoicePaidSchema,
 } from '../utils/validate.js';
-import { hashPassword } from '../utils/helpers.js';
+import { hashPassword, escapeRegex, getPagination } from '../utils/helpers.js';
 import { Apartment, Plan, User, SaaSInvoice, Unit } from '../models/index.js';
 import { ROLES, COUNTRY_CURRENCY } from '../config/constants.js';
 import { audit } from '../middleware/audit.js';
@@ -21,14 +22,19 @@ router.get('/apartments', async (req, res) => {
     const { search } = req.query;
     let filter = {};
     if (search) {
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { address: { $regex: search, $options: 'i' } },
-        { city: { $regex: search, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { address: { $regex: escaped, $options: 'i' } },
+        { city: { $regex: escaped, $options: 'i' } },
       ];
     }
-    const apartments = await Apartment.find(filter).populate('planId').sort({ createdAt: -1 });
-    res.json({ success: true, data: apartments });
+    const { page, limit, skip } = getPagination(req.query);
+    const [apartments, total] = await Promise.all([
+      Apartment.find(filter).populate('planId').sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Apartment.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: apartments, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch apartments' });
   }
@@ -51,6 +57,7 @@ router.post('/apartments', validate(createApartmentSchema), audit('create', 'apa
 
 router.put('/apartments/:id', validate(updateApartmentSchema), audit('update', 'apartment'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const updateData = { ...req.validatedBody };
     if (updateData.planId === '' || updateData.planId === null) updateData.planId = null;
     const apartment = await Apartment.findByIdAndUpdate(req.params.id, updateData, { new: true });
@@ -63,6 +70,7 @@ router.put('/apartments/:id', validate(updateApartmentSchema), audit('update', '
 
 router.delete('/apartments/:id', audit('delete', 'apartment'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     await Apartment.findByIdAndDelete(req.params.id);
     res.json({ success: true, data: { message: 'Apartment deleted' } });
   } catch (err) {
@@ -72,8 +80,12 @@ router.delete('/apartments/:id', audit('delete', 'apartment'), async (req, res) 
 
 router.get('/plans', async (req, res) => {
   try {
-    const plans = await Plan.find().sort({ price: 1 });
-    res.json({ success: true, data: plans });
+    const { page, limit, skip } = getPagination(req.query);
+    const [plans, total] = await Promise.all([
+      Plan.find().sort({ price: 1 }).skip(skip).limit(limit),
+      Plan.countDocuments()
+    ]);
+    res.json({ success: true, data: plans, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch plans' });
   }
@@ -90,6 +102,7 @@ router.post('/plans', validate(createPlanSchema), audit('create', 'plan'), async
 
 router.put('/plans/:id', validate(createPlanSchema), audit('update', 'plan'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const plan = await Plan.findByIdAndUpdate(req.params.id, req.validatedBody, { new: true });
     if (!plan) return res.status(404).json({ success: false, error: 'Plan not found' });
     res.json({ success: true, data: plan });
@@ -100,6 +113,7 @@ router.put('/plans/:id', validate(createPlanSchema), audit('update', 'plan'), as
 
 router.delete('/plans/:id', audit('delete', 'plan'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     await Plan.findByIdAndDelete(req.params.id);
     res.json({ success: true, data: { message: 'Plan deleted' } });
   } catch (err) {
@@ -130,14 +144,20 @@ router.get('/invoices', async (req, res) => {
     const { search } = req.query;
     let filter = {};
     if (search) {
-      const apartments = await Apartment.find({ name: { $regex: search, $options: 'i' } }).select('_id');
+      const escaped = escapeRegex(search);
+      const apartments = await Apartment.find({ name: { $regex: escaped, $options: 'i' } }).select('_id');
       filter.apartmentId = { $in: apartments.map(a => a._id) };
     }
-    const invoices = await SaaSInvoice.find(filter)
-      .populate('apartmentId', 'name')
-      .populate('planId', 'name')
-      .sort({ generatedAt: -1 });
-    res.json({ success: true, data: invoices });
+    const { page, limit, skip } = getPagination(req.query);
+    const [invoices, total] = await Promise.all([
+      SaaSInvoice.find(filter)
+        .populate('apartmentId', 'name')
+        .populate('planId', 'name')
+        .sort({ generatedAt: -1 })
+        .skip(skip).limit(limit),
+      SaaSInvoice.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: invoices, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch invoices' });
   }
@@ -145,6 +165,7 @@ router.get('/invoices', async (req, res) => {
 
 router.put('/invoices/:id/mark-paid', validate(markInvoicePaidSchema), audit('update', 'invoice'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const invoice = await SaaSInvoice.findByIdAndUpdate(
       req.params.id,
       { status: 'paid' },
@@ -193,7 +214,7 @@ router.get('/invoices/export', async (req, res) => {
   }
 });
 
-router.get('/invoices/generate', audit('create', 'invoice_generation'), async (req, res) => {
+router.post('/invoices/generate', audit('create', 'invoice_generation'), async (req, res) => {
   try {
     const apartments = await Apartment.find({ status: 'active', planId: { $ne: null } });
     const period = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
@@ -227,23 +248,27 @@ router.get('/invoices/generate', audit('create', 'invoice_generation'), async (r
   }
 });
 
-export default router;
-
 router.get('/accounts', async (req, res) => {
   try {
     const { search } = req.query;
     let filter = { type: { $ne: ROLES.SITE_ADMIN } };
     if (search) {
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { identifier: { $regex: search, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { identifier: { $regex: escaped, $options: 'i' } },
       ];
     }
-    const users = await User.find(filter)
-      .select('-passwordHash')
-      .populate('apartmentId', 'name')
-      .sort({ type: 1, name: 1 });
-    res.json({ success: true, data: users });
+    const { page, limit, skip } = getPagination(req.query);
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('-passwordHash')
+        .populate('apartmentId', 'name')
+        .sort({ type: 1, name: 1 })
+        .skip(skip).limit(limit),
+      User.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: users, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch accounts' });
   }
@@ -270,6 +295,7 @@ router.post('/accounts', validate(createUserSchema), audit('create', 'account'),
 
 router.put('/accounts/:id', audit('update', 'account'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const allowed = ['type', 'apartmentId', 'status'];
     const update = {};
     for (const key of allowed) {
@@ -286,6 +312,7 @@ router.put('/accounts/:id', audit('update', 'account'), async (req, res) => {
 
 router.delete('/accounts/:id', audit('delete', 'account'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ success: false, error: 'Account not found' });
     res.json({ success: true, data: { message: 'Account deleted' } });
@@ -293,3 +320,6 @@ router.delete('/accounts/:id', audit('delete', 'account'), async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to delete account' });
   }
 });
+
+export default router;
+

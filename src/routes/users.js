@@ -1,8 +1,9 @@
+import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { updateUserSchema, changePasswordSchema } from '../utils/validate.js';
-import { hashPassword } from '../utils/helpers.js';
+import { hashPassword, escapeRegex, getPagination } from '../utils/helpers.js';
 import { User } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
 import { audit } from '../middleware/audit.js';
@@ -38,19 +39,23 @@ router.get('/', async (req, res) => {
 
     const { search } = req.query;
     if (search) {
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { identifier: { $regex: search, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { identifier: { $regex: escaped, $options: 'i' } },
       ];
     }
 
+    const { page, limit, skip } = getPagination(req.query);
+    const total = await User.countDocuments(filter);
     const users = await User.find(filter)
       .select('-passwordHash')
       .populate('unitId', 'unitNumber')
-      .sort({ type: 1, name: 1 });
+      .sort({ type: 1, name: 1 })
+      .skip(skip).limit(limit);
 
     const filtered = users.filter(u => u.type !== ROLES.SITE_ADMIN && canManage(managerType, u.type));
-    res.json({ success: true, data: filtered });
+    res.json({ success: true, data: filtered, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch users' });
   }
@@ -58,6 +63,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const user = await User.findById(req.params.id).select('-passwordHash').populate('unitId', 'unitNumber');
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
     if (!canManage(req.user.type, user.type)) {
@@ -69,21 +75,16 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', validate(updateUserSchema), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ success: false, error: 'User not found' });
     if (!canManage(req.user.type, target.type)) {
       return res.status(403).json({ success: false, error: 'Cannot manage this user' });
     }
 
-    const allowed = ['name', 'status', 'unitId', 'phone', 'identityNumber', 'residence', 'customRole'];
-    const update = {};
-    for (const key of allowed) {
-      if (req.body[key] !== undefined) update[key] = req.body[key];
-    }
-
-    const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select('-passwordHash');
+    const updated = await User.findByIdAndUpdate(req.params.id, req.validatedBody, { new: true }).select('-passwordHash');
     res.json({ success: true, data: updated });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to update user' });
@@ -92,6 +93,7 @@ router.put('/:id', async (req, res) => {
 
 router.put('/:id/change-password', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ success: false, error: 'User not found' });
     if (!canManage(req.user.type, target.type)) {

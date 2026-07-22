@@ -153,6 +153,22 @@ export const markInvoicePaidSchema = z.object({
   status: z.enum(['paid']),
 });
 
+export const updateUnitSchema = z.object({
+  unitNumber: z.string().min(1).optional(),
+  unitType: z.string().optional(),
+  residentUserId: z.string().optional().nullable(),
+  ownerId: z.string().optional().nullable(),
+  status: z.enum(['occupied', 'vacant']).optional(),
+});
+
+export const updateApartmentSettingsSchema = z.object({
+  defaultCurrency: z.string().optional(),
+  city: z.string().optional(),
+  country: z.string().optional(),
+  address: z.string().optional(),
+  apartmentType: z.string().optional(),
+});
+
 export const createCustomRoleSchema = z.object({
   name: z.string().min(1),
 });

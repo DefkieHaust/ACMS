@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import { ROLE_LABELS } from '../utils/constants';
 import toast from 'react-hot-toast';
 
 export default function AccountManagementPage() {
   const [accounts, setAccounts] = useState([]);
   const [apartments, setApartments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -15,20 +19,35 @@ export default function AccountManagementPage() {
   const [pwForm, setPwForm] = useState({ userId: '', currentPassword: '', newPassword: '', confirmPassword: '' });
   const [pwOpen, setPwOpen] = useState(false);
   const [changeOwnPw, setChangeOwnPw] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState(null);
 
-  const fetchAccounts = (q) => {
-    const query = q !== undefined ? q : search;
-    api.get('/admin/accounts' + (query ? `?search=${encodeURIComponent(query)}` : '')).then((r) => {
-      setAccounts(r.data || []);
-    }).catch(() => {});
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchAccounts = () => {
+    setLoading(true);
+    setError(null);
+    const query = debouncedSearch;
+    api.get('/admin/accounts' + (query ? `?search=${encodeURIComponent(query)}` : ''))
+      .then((r) => setAccounts(r.data || []))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load accounts');
+        toast.error('Failed to load accounts');
+      });
+    api.get('/admin/apartments')
+      .then((r) => setApartments(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchAccounts();
-    api.get('/admin/apartments').then((r) => setApartments(r.data)).catch(() => {});
-  }, []);
+  }, [debouncedSearch]);
 
   const openCreate = () => {
     setForm({ name: '', identifier: '', password: '', type: 'apartment_admin', apartmentId: '' });
@@ -76,14 +95,17 @@ export default function AccountManagementPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this account permanently?')) return;
+  const handleDelete = async () => {
     try {
-      await api.delete(`/admin/accounts/${id}`);
+      await api.delete(`/admin/accounts/${confirmId}`);
       toast.success('Account deleted');
+      setConfirmOpen(false);
+      setConfirmId(null);
       fetchAccounts();
     } catch (err) {
       toast.error('Failed to delete account');
+      setConfirmOpen(false);
+      setConfirmId(null);
     }
   };
 
@@ -132,6 +154,8 @@ export default function AccountManagementPage() {
 
   const showType = accounts.filter((a) => a.type !== 'site_admin');
 
+  if (loading) return <LoadingSkeleton lines={8} />;
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Account Management */}
@@ -141,8 +165,15 @@ export default function AccountManagementPage() {
           <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Create Account</button>
         </div>
 
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+            <p className="text-sm text-red-700">{error}</p>
+            <button onClick={fetchAccounts} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+          </div>
+        )}
+
         <div className="mb-4">
-          <input type="text" placeholder="Search accounts..." value={search} onChange={(e) => { setSearch(e.target.value); fetchAccounts(e.target.value); }} className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
+          <input type="text" placeholder="Search accounts..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -173,7 +204,7 @@ export default function AccountManagementPage() {
                     <div className="flex flex-col gap-1 items-end">
                       <button onClick={() => openEdit(a)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
                       <button onClick={() => openChangePassword(a)} className="text-sm text-yellow-600 hover:text-yellow-800 font-medium">Password</button>
-                      <button onClick={() => handleDelete(a._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+                      <button onClick={() => { setConfirmId(a._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -205,6 +236,8 @@ export default function AccountManagementPage() {
           </form>
         </div>
       </div>
+
+      <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} title="Delete Account" message="Delete this account permanently?" confirmText="Delete" danger />
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create Account">
         <form onSubmit={handleCreate} className="space-y-4">

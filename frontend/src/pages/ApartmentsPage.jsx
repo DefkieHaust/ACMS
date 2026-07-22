@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 import { CURRENCIES, APARTMENT_TYPES } from '../utils/constants';
 
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -14,14 +18,32 @@ export default function ApartmentsPage() {
   const [form, setForm] = useState({ name: '', address: '', planId: '' });
   const [adminForm, setAdminForm] = useState({ name: '', identifier: '', password: '', phone: '', identityNumber: '' });
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState(null);
 
-  const fetchApartments = (q) => {
-    const query = q || search;
-    api.get('/admin/apartments' + (query ? `?search=${encodeURIComponent(query)}` : '')).then((r) => setApartments(r.data));
-    api.get('/admin/plans').then((r) => setPlans(r.data));
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchApartments = () => {
+    setLoading(true);
+    setError(null);
+    const query = debouncedSearch;
+    api.get('/admin/apartments' + (query ? `?search=${encodeURIComponent(query)}` : ''))
+      .then((r) => setApartments(r.data))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load apartments');
+        toast.error('Failed to load apartments');
+      });
+    api.get('/admin/plans')
+      .then((r) => setPlans(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchApartments(); }, []);
+  useEffect(() => { fetchApartments(); }, [debouncedSearch]);
 
   const openCreate = () => {
     setEditItem(null);
@@ -48,8 +70,7 @@ export default function ApartmentsPage() {
         toast.success('Apartment created');
       }
       setEditOpen(false);
-      const r = await api.get('/admin/apartments');
-      setApartments(r.data);
+      fetchApartments();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Operation failed');
     }
@@ -60,21 +81,23 @@ export default function ApartmentsPage() {
       const newStatus = a.status === 'active' ? 'suspended' : 'active';
       await api.put(`/admin/apartments/${a._id}`, { status: newStatus });
       toast.success(`Apartment ${newStatus}`);
-      const r = await api.get('/admin/apartments');
-      setApartments(r.data);
+      fetchApartments();
     } catch (err) {
       toast.error('Failed to update status');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this apartment permanently? This cannot be undone.')) return;
+  const handleDelete = async () => {
     try {
-      await api.delete(`/admin/apartments/${id}`);
+      await api.delete(`/admin/apartments/${confirmId}`);
       toast.success('Apartment deleted');
-      setApartments(apartments.filter((a) => a._id !== id));
+      setApartments(apartments.filter((a) => a._id !== confirmId));
+      setConfirmOpen(false);
+      setConfirmId(null);
     } catch (err) {
       toast.error('Failed to delete apartment');
+      setConfirmOpen(false);
+      setConfirmId(null);
     }
   };
 
@@ -99,6 +122,8 @@ export default function ApartmentsPage() {
     }
   };
 
+  if (loading) return <LoadingSkeleton lines={8} />;
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -106,8 +131,15 @@ export default function ApartmentsPage() {
         <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ New Apartment</button>
       </div>
 
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={fetchApartments} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
+
       <div className="mb-4">
-        <input type="text" placeholder="Search apartments..." value={search} onChange={(e) => { setSearch(e.target.value); fetchApartments(e.target.value); }} className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
+        <input type="text" placeholder="Search apartments..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -139,7 +171,7 @@ export default function ApartmentsPage() {
                 <td className="px-6 py-4 text-right">
                   <div className="flex flex-col gap-1 items-end">
                     <button onClick={() => openEdit(a)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
-                    <button onClick={() => handleDelete(a._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+                    <button onClick={() => { setConfirmId(a._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
                     <button onClick={() => { setSelectedApt(a); setAdminForm({ name: '', identifier: '', password: '' }); setAdminOpen(true); }} className="text-sm text-green-600 hover:text-green-800 font-medium">Create Admin</button>
                   </div>
                 </td>
@@ -149,6 +181,8 @@ export default function ApartmentsPage() {
         </table>
         {apartments.length === 0 && <p className="text-center text-gray-500 py-8">No apartments yet</p>}
       </div>
+
+      <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} title="Delete Apartment" message="Delete this apartment permanently? This cannot be undone." confirmText="Delete" danger />
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title={editItem ? 'Edit Apartment' : 'New Apartment'}>
         <form onSubmit={handleSubmit} className="space-y-4">

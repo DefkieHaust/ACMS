@@ -3,6 +3,7 @@ import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 
 export default function ComplaintsPage() {
@@ -11,18 +12,42 @@ export default function ComplaintsPage() {
   const isCommittee = user?.type === ROLES.COMMITTEE_HEAD || user?.type === ROLES.COMMITTEE_MEMBER;
   const [complaints, setComplaints] = useState([]);
   const [committees, setCommittees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ committeeId: '', title: '', description: '' });
+  const [rateModalOpen, setRateModalOpen] = useState(false);
+  const [rateComplaintId, setRateComplaintId] = useState(null);
 
   useEffect(() => {
-    fetchComplaints();
+    setLoading(true);
+    setError(null);
+    api.get('/complaints')
+      .then((r) => setComplaints(r.data))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load complaints');
+        toast.error('Failed to load complaints');
+      });
     if (isResident) {
-      api.get('/committees').then((r) => setCommittees(r.data));
+      api.get('/committees')
+        .then((r) => setCommittees(r.data))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, []);
 
   const fetchComplaints = () => {
-    api.get('/complaints').then((r) => setComplaints(r.data));
+    setLoading(true);
+    setError(null);
+    api.get('/complaints')
+      .then((r) => setComplaints(r.data))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load complaints');
+        toast.error('Failed to load complaints');
+      })
+      .finally(() => setLoading(false));
   };
 
   const handleSubmit = async (e) => {
@@ -48,17 +73,24 @@ export default function ComplaintsPage() {
     }
   };
 
-  const rateComplaint = async (id) => {
-    const rating = prompt('Rate (1-5):');
-    if (!rating || rating < 1 || rating > 5) return toast.error('Rating must be 1-5');
+  const openRateModal = (id) => {
+    setRateComplaintId(id);
+    setRateModalOpen(true);
+  };
+
+  const submitRating = async (rating) => {
     try {
-      await api.put(`/complaints/${id}/rate`, { rating: Number(rating) });
+      await api.put(`/complaints/${rateComplaintId}/rate`, { rating });
       toast.success('Rating submitted');
+      setRateModalOpen(false);
+      setRateComplaintId(null);
       fetchComplaints();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to rate');
     }
   };
+
+  if (loading) return <LoadingSkeleton lines={8} />;
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -68,6 +100,13 @@ export default function ComplaintsPage() {
           <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Raise Complaint</button>
         )}
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={fetchComplaints} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full">
@@ -105,7 +144,7 @@ export default function ComplaintsPage() {
                 <td className="px-6 py-4 text-gray-600">{c.rating ? '★'.repeat(c.rating) : '-'}</td>
                 <td className="px-6 py-4 text-right">
                   {isResident && c.status === 'resolved' && !c.rating && (
-                    <button onClick={() => rateComplaint(c._id)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Rate</button>
+                    <button onClick={() => openRateModal(c._id)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Rate</button>
                   )}
                 </td>
               </tr>
@@ -114,6 +153,25 @@ export default function ComplaintsPage() {
         </table>
         {complaints.length === 0 && <p className="text-center text-gray-500 py-8">No complaints found</p>}
       </div>
+
+      <Modal open={rateModalOpen} onClose={() => setRateModalOpen(false)} title="Rate Complaint Resolution">
+        <div className="text-center">
+          <p className="text-gray-600 mb-6">How satisfied are you with the resolution?</p>
+          <div className="flex justify-center gap-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => submitRating(star)}
+                className="w-12 h-12 rounded-lg bg-gray-100 hover:bg-yellow-100 hover:text-yellow-600 text-2xl transition-colors flex items-center justify-center"
+                title={`${star} star${star > 1 ? 's' : ''}`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setRateModalOpen(false)} className="mt-6 text-sm text-gray-500 hover:text-gray-700 font-medium">Cancel</button>
+        </div>
+      </Modal>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Raise a Complaint">
         <form onSubmit={handleSubmit} className="space-y-4">

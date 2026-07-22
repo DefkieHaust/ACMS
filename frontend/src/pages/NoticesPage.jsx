@@ -3,6 +3,8 @@ import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import PageLoading from '../components/PageLoading';
 import toast from 'react-hot-toast';
 
 export default function NoticesPage() {
@@ -10,13 +12,29 @@ export default function NoticesPage() {
   const canPost = user?.type === ROLES.APARTMENT_ADMIN || user?.type === ROLES.COMMITTEE_HEAD;
   const [notices, setNotices] = useState([]);
   const [committees, setCommittees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ title: '', body: '', committeeId: '' });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState(null);
 
   useEffect(() => {
-    api.get('/notices').then((r) => setNotices(r.data));
+    setLoading(true);
+    setError(null);
+    api.get('/notices')
+      .then((r) => setNotices(r.data))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load notices');
+        toast.error('Failed to load notices');
+      });
     if (user?.type === ROLES.APARTMENT_ADMIN) {
-      api.get('/apartment/committees').then((r) => setCommittees(r.data));
+      api.get('/apartment/committees')
+        .then((r) => setCommittees(r.data))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, []);
 
@@ -29,23 +47,27 @@ export default function NoticesPage() {
       toast.success('Notice posted');
       setModalOpen(false);
       setForm({ title: '', body: '', committeeId: '' });
-      const r = await api.get('/notices');
-      setNotices(r.data);
+      fetchNotices();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to post notice');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this notice?')) return;
+  const handleDelete = async () => {
     try {
-      await api.delete(`/notices/${id}`);
+      await api.delete(`/notices/${confirmId}`);
       toast.success('Notice deleted');
-      setNotices((prev) => prev.filter((n) => n._id !== id));
+      setNotices((prev) => prev.filter((n) => n._id !== confirmId));
+      setConfirmOpen(false);
+      setConfirmId(null);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to delete notice');
+      setConfirmOpen(false);
+      setConfirmId(null);
     }
   };
+
+  if (loading) return <PageLoading />;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -55,6 +77,13 @@ export default function NoticesPage() {
           <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ New Notice</button>
         )}
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="space-y-4">
         {notices.map((n) => (
@@ -69,7 +98,7 @@ export default function NoticesPage() {
                 </p>
               </div>
               {canPost && n.postedBy?._id === user?.id && (
-                <button onClick={() => handleDelete(n._id)} className="text-sm text-red-600 hover:text-red-800 font-medium shrink-0">Delete</button>
+                <button onClick={() => { setConfirmId(n._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium shrink-0">Delete</button>
               )}
             </div>
             <p className="mt-3 text-gray-700 whitespace-pre-wrap">{n.body}</p>
@@ -79,6 +108,8 @@ export default function NoticesPage() {
           <div className="text-center py-12 text-gray-500">No notices yet</div>
         )}
       </div>
+
+      <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} title="Delete Notice" message="Delete this notice?" confirmText="Delete" danger />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Post Notice">
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import PageLoading from '../components/PageLoading';
 import toast from 'react-hot-toast';
 
 export default function CommitteesPage() {
   const [committees, setCommittees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [headModalOpen, setHeadModalOpen] = useState(false);
@@ -13,9 +17,19 @@ export default function CommitteesPage() {
   const [form, setForm] = useState({ name: '', description: '' });
   const [editForm, setEditForm] = useState({ name: '', description: '' });
   const [headForm, setHeadForm] = useState({ name: '', identifier: '', password: '' });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState(null);
 
   const fetchCommittees = () => {
-    api.get('/apartment/committees').then((r) => setCommittees(r.data));
+    setLoading(true);
+    setError(null);
+    api.get('/apartment/committees')
+      .then((r) => setCommittees(r.data))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load committees');
+        toast.error('Failed to load committees');
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchCommittees(); }, []);
@@ -51,14 +65,17 @@ export default function CommitteesPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this committee permanently?')) return;
+  const handleDelete = async () => {
     try {
-      await api.delete(`/apartment/committees/${id}`);
+      await api.delete(`/apartment/committees/${confirmId}`);
       toast.success('Committee deleted');
+      setConfirmOpen(false);
+      setConfirmId(null);
       fetchCommittees();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to delete committee');
+      setConfirmOpen(false);
+      setConfirmId(null);
     }
   };
 
@@ -80,12 +97,21 @@ export default function CommitteesPage() {
     }
   };
 
+  if (loading) return <PageLoading />;
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Committees</h1>
         <button onClick={() => { setForm({ name: '', description: '' }); setModalOpen(true); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ New Committee</button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={fetchCommittees} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {committees.map((c) => (
@@ -95,7 +121,7 @@ export default function CommitteesPage() {
             {c.description && <p className="text-sm text-gray-500 mt-2">{c.description}</p>}
             <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
               <button onClick={() => openEdit(c)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
-              <button onClick={() => handleDelete(c._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+              <button onClick={() => { setConfirmId(c._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
               {!c.headUserId && (
                 <button onClick={() => openHeadModal(c)} className="text-sm text-green-600 hover:text-green-800 font-medium">Set Head</button>
               )}
@@ -106,6 +132,8 @@ export default function CommitteesPage() {
           <div className="col-span-full text-center py-12 text-gray-500">No committees yet. Create your first committee.</div>
         )}
       </div>
+
+      <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} title="Delete Committee" message="Delete this committee permanently?" confirmText="Delete" danger />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Committee">
         <form onSubmit={createCommittee} className="space-y-4">

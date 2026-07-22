@@ -216,11 +216,11 @@ describe('Site Admin - Invoices', () => {
     expect(res.body.data.status).toBe('paid');
   });
 
-  it('GET /api/admin/invoices/generate - generates invoices for active apartments with plans', async () => {
+  it('POST /api/admin/invoices/generate - generates invoices for active apartments with plans', async () => {
     const plan = await createTestPlan();
     await createTestApartment({ planId: plan._id });
 
-    const res = await request(app).get('/api/admin/invoices/generate').set(authHeader(admin));
+    const res = await request(app).post('/api/admin/invoices/generate').set(authHeader(admin));
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.message).toBe('Invoices generated');

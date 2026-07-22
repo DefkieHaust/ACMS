@@ -1,19 +1,35 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 import { RESIDENT_TYPES } from '../utils/constants';
 
 export default function ResidentsPage() {
   const [residents, setResidents] = useState([]);
   const [units, setUnits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({ name: '', identifier: '', password: '', unitId: '', residentType: 'tenant', phone: '', identityNumber: '' });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState(null);
 
   useEffect(() => {
-    api.get('/apartment/residents').then((r) => setResidents(r.data));
-    api.get('/apartment/units').then((r) => setUnits(r.data.filter((u) => u.status === 'vacant')));
+    setLoading(true);
+    setError(null);
+    api.get('/apartment/residents')
+      .then((r) => setResidents(r.data))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load residents');
+        toast.error('Failed to load residents');
+      });
+    api.get('/apartment/units')
+      .then((r) => setUnits(r.data.filter((u) => u.status === 'vacant')))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const openCreate = () => {
@@ -48,16 +64,21 @@ export default function ResidentsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this resident?')) return;
+  const handleDelete = async () => {
     try {
-      await api.delete(`/apartment/residents/${id}`);
+      await api.delete(`/apartment/residents/${confirmId}`);
       toast.success('Resident deleted');
-      setResidents(residents.filter((r) => r._id !== id));
+      setResidents(residents.filter((r) => r._id !== confirmId));
+      setConfirmOpen(false);
+      setConfirmId(null);
     } catch (err) {
       toast.error('Failed to delete resident');
+      setConfirmOpen(false);
+      setConfirmId(null);
     }
   };
+
+  if (loading) return <LoadingSkeleton lines={8} />;
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -65,6 +86,13 @@ export default function ResidentsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Residents</h1>
         <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Resident</button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full">
@@ -94,7 +122,7 @@ export default function ResidentsPage() {
                 </td>
                 <td className="px-6 py-4 text-right">
                   <button onClick={() => openEdit(r)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium mr-3">Edit</button>
-                  <button onClick={() => handleDelete(r._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Remove</button>
+                  <button onClick={() => { setConfirmId(r._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Remove</button>
                 </td>
               </tr>
             ))}
@@ -102,6 +130,8 @@ export default function ResidentsPage() {
         </table>
         {residents.length === 0 && <p className="text-center text-gray-500 py-8">No residents yet</p>}
       </div>
+
+      <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} title="Delete Resident" message="Delete this resident?" confirmText="Delete" danger />
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title={editItem ? 'Edit Resident' : 'Add Resident'}>
         <form onSubmit={handleSubmit} className="space-y-4">

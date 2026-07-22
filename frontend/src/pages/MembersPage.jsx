@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import { ROLE_LABELS } from '../utils/constants';
 import toast from 'react-hot-toast';
 
@@ -9,15 +11,27 @@ export default function MembersPage() {
   const { user } = useAuth();
   const [members, setMembers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editMember, setEditMember] = useState(null);
   const [form, setForm] = useState({ userId: '', role: 'committee_member' });
   const [editForm, setEditForm] = useState({ role: 'committee_member' });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState(null);
 
   const fetchMembers = () => {
     if (user?.committeeId) {
-      api.get(`/committees/${user.committeeId}/members`).then((r) => setMembers(r.data));
+      setLoading(true);
+      setError(null);
+      api.get(`/committees/${user.committeeId}/members`)
+        .then((r) => setMembers(r.data))
+        .catch((e) => {
+          setError(e.response?.data?.error || 'Failed to load members');
+          toast.error('Failed to load members');
+        })
+        .finally(() => setLoading(false));
     }
   };
 
@@ -25,9 +39,9 @@ export default function MembersPage() {
 
   useEffect(() => {
     if (user?.apartmentId) {
-      api.get(`/apartment/residents`).then((r) => {
-        setAllUsers(r.data || []);
-      }).catch(() => {});
+      api.get(`/apartment/residents`)
+        .then((r) => setAllUsers(r.data || []))
+        .catch(() => {});
     }
   }, [user?.apartmentId]);
 
@@ -66,18 +80,23 @@ export default function MembersPage() {
     }
   };
 
-  const removeMember = async (memberId) => {
-    if (!confirm('Remove this member?')) return;
+  const removeMember = async () => {
     try {
-      await api.delete(`/committees/${user.committeeId}/members/${memberId}`);
+      await api.delete(`/committees/${user.committeeId}/members/${confirmId}`);
       toast.success('Member removed');
+      setConfirmOpen(false);
+      setConfirmId(null);
       fetchMembers();
     } catch (err) {
       toast.error('Failed to remove member');
+      setConfirmOpen(false);
+      setConfirmId(null);
     }
   };
 
   const availableUsers = allUsers.filter((u) => !members.find((m) => m.userId?._id === u._id || m._id === u._id));
+
+  if (loading) return <LoadingSkeleton lines={6} />;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -85,6 +104,13 @@ export default function MembersPage() {
         <h1 className="text-2xl font-bold text-gray-900">Committee Members</h1>
         <button onClick={openAdd} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Member</button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={fetchMembers} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full">
@@ -109,7 +135,7 @@ export default function MembersPage() {
                 <td className="px-6 py-4 text-right space-x-2">
                   <button onClick={() => openEditRole(m)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Change Role</button>
                   {m.role !== 'committee_head' && (
-                    <button onClick={() => removeMember(m._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Remove</button>
+                    <button onClick={() => { setConfirmId(m._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Remove</button>
                   )}
                 </td>
               </tr>
@@ -118,6 +144,8 @@ export default function MembersPage() {
         </table>
         {members.length === 0 && <p className="text-center text-gray-500 py-8">No members yet</p>}
       </div>
+
+      <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={removeMember} title="Remove Member" message="Remove this member?" confirmText="Remove" danger />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Committee Member">
         <form onSubmit={handleAdd} className="space-y-4">

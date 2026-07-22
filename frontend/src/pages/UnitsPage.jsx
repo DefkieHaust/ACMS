@@ -1,19 +1,35 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
+import PageLoading from '../components/PageLoading';
 import toast from 'react-hot-toast';
 import { UNIT_TYPES } from '../utils/constants';
 
 export default function UnitsPage() {
   const [units, setUnits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({ unitNumber: '', status: 'vacant', unitType: 'apartment', ownerId: '' });
   const [owners, setOwners] = useState([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState(null);
 
   useEffect(() => {
-    api.get('/apartment/units').then((r) => setUnits(r.data));
-    api.get('/apartment/residents').then((r) => setOwners(r.data.filter((res) => res.residentType === 'owner' || !res.residentType))).catch(() => {});
+    setLoading(true);
+    setError(null);
+    api.get('/apartment/units')
+      .then((r) => setUnits(r.data))
+      .catch((e) => {
+        setError(e.response?.data?.error || 'Failed to load units');
+        toast.error('Failed to load units');
+      });
+    api.get('/apartment/residents')
+      .then((r) => setOwners(r.data.filter((res) => res.residentType === 'owner' || !res.residentType)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const openCreate = () => {
@@ -48,16 +64,21 @@ export default function UnitsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this unit?')) return;
+  const handleDelete = async () => {
     try {
-      await api.delete(`/apartment/units/${id}`);
+      await api.delete(`/apartment/units/${confirmId}`);
       toast.success('Unit deleted');
-      setUnits(units.filter((u) => u._id !== id));
+      setUnits(units.filter((u) => u._id !== confirmId));
+      setConfirmOpen(false);
+      setConfirmId(null);
     } catch (err) {
       toast.error('Failed to delete unit');
+      setConfirmOpen(false);
+      setConfirmId(null);
     }
   };
+
+  if (loading) return <PageLoading />;
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -65,6 +86,13 @@ export default function UnitsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Units</h1>
         <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Unit</button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <p className="text-sm text-red-700">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {units.map((u) => (
@@ -81,11 +109,13 @@ export default function UnitsPage() {
             )}
             <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
               <button onClick={() => openEdit(u)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
-              <button onClick={() => handleDelete(u._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+              <button onClick={() => { setConfirmId(u._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
             </div>
           </div>
         ))}
       </div>
+
+      <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} title="Delete Unit" message="Delete this unit?" confirmText="Delete" danger />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? 'Edit Unit' : 'Add Unit'}>
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -20,6 +20,10 @@ export function verifyToken(token) {
   return jwt.verify(token, config.jwtSecret);
 }
 
+export function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function getPagination(query) {
   const page = Math.max(1, parseInt(query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(query.limit) || 20));

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, authorize, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -5,10 +6,13 @@ import {
   createUserSchema,
   updateUserSchema,
   createUnitSchema,
+  updateUnitSchema,
   createCommitteeSchema,
+  updateCommitteeSchema,
   createCommitteeHeadSchema,
+  updateApartmentSettingsSchema,
 } from '../utils/validate.js';
-import { hashPassword } from '../utils/helpers.js';
+import { hashPassword, escapeRegex, getPagination } from '../utils/helpers.js';
 import { User, Unit, Committee, SaaSInvoice, Apartment } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
 import { audit } from '../middleware/audit.js';
@@ -21,16 +25,22 @@ router.get('/units', async (req, res) => {
     const { search } = req.query;
     let filter = { apartmentId: req.apartmentId };
     if (search) {
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { unitNumber: { $regex: search, $options: 'i' } },
-        { unitType: { $regex: search, $options: 'i' } },
+        { unitNumber: { $regex: escaped, $options: 'i' } },
+        { unitType: { $regex: escaped, $options: 'i' } },
       ];
     }
-    const units = await Unit.find(filter)
-      .populate('residentUserId', 'name identifier phone identityNumber residence')
-      .populate('ownerId', 'name identifier phone identityNumber residence')
-      .sort({ unitNumber: 1 });
-    res.json({ success: true, data: units });
+    const { page, limit, skip } = getPagination(req.query);
+    const [units, total] = await Promise.all([
+      Unit.find(filter)
+        .populate('residentUserId', 'name identifier phone identityNumber residence')
+        .populate('ownerId', 'name identifier phone identityNumber residence')
+        .sort({ unitNumber: 1 })
+        .skip(skip).limit(limit),
+      Unit.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: units, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch units' });
   }
@@ -46,12 +56,12 @@ router.post('/units', validate(createUnitSchema), audit('create', 'unit'), async
   }
 });
 
-router.put('/units/:id', async (req, res) => {
+router.put('/units/:id', validate(updateUnitSchema), async (req, res) => {
   try {
-    const updateData = { ...req.body };
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const unit = await Unit.findOneAndUpdate(
       { _id: req.params.id, apartmentId: req.apartmentId },
-      updateData,
+      req.validatedBody,
       { new: true }
     );
     if (!unit) return res.status(404).json({ success: false, error: 'Unit not found' });
@@ -63,6 +73,7 @@ router.put('/units/:id', async (req, res) => {
 
 router.delete('/units/:id', audit('delete', 'unit'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     await Unit.findOneAndDelete({ _id: req.params.id, apartmentId: req.apartmentId });
     res.json({ success: true, data: { message: 'Unit deleted' } });
   } catch (err) {
@@ -75,12 +86,17 @@ router.get('/residents', async (req, res) => {
     const { search } = req.query;
     let filter = { apartmentId: req.apartmentId, type: ROLES.RESIDENT };
     if (search) {
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { identifier: { $regex: search, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { identifier: { $regex: escaped, $options: 'i' } },
       ];
     }
-    const residents = await User.find(filter).populate('unitId', 'unitNumber unitType').sort({ name: 1 });
+    const { page, limit, skip } = getPagination(req.query);
+    const [residents, total] = await Promise.all([
+      User.find(filter).populate('unitId', 'unitNumber unitType').sort({ name: 1 }).skip(skip).limit(limit),
+      User.countDocuments(filter)
+    ]);
     res.json({ success: true, data: residents.map((r) => ({
       _id: r._id,
       name: r.name,
@@ -108,9 +124,10 @@ router.get('/unit-owners', async (req, res) => {
       filter.apartmentId = req.apartmentId;
     }
     if (search) {
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { identifier: { $regex: search, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { identifier: { $regex: escaped, $options: 'i' } },
       ];
     }
     const owners = await User.find(filter).sort({ name: 1 });
@@ -152,21 +169,12 @@ router.post('/residents', validate(createUserSchema), audit('create', 'resident'
   }
 });
 
-router.put('/residents/:id', async (req, res) => {
+router.put('/residents/:id', validate(updateUserSchema), async (req, res) => {
   try {
-    const { name, status, unitId, residentType, phone, identityNumber, residence } = req.body;
-    const update = {};
-    if (name) update.name = name;
-    if (status) update.status = status;
-    if (unitId !== undefined) update.unitId = unitId || null;
-    if (residentType) update.residentType = residentType;
-    if (phone) update.phone = phone;
-    if (identityNumber !== undefined) update.identityNumber = identityNumber;
-    if (residence !== undefined) update.residence = residence;
-
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const user = await User.findOneAndUpdate(
       { _id: req.params.id, apartmentId: req.apartmentId, type: ROLES.RESIDENT },
-      update,
+      req.validatedBody,
       { new: true }
     );
     if (!user) return res.status(404).json({ success: false, error: 'Resident not found' });
@@ -178,6 +186,7 @@ router.put('/residents/:id', async (req, res) => {
 
 router.delete('/residents/:id', audit('delete', 'resident'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const user = await User.findOneAndDelete({
       _id: req.params.id,
       apartmentId: req.apartmentId,
@@ -197,12 +206,17 @@ router.get('/committees', async (req, res) => {
     const { search } = req.query;
     let filter = { apartmentId: req.apartmentId };
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      filter.name = { $regex: escapeRegex(search), $options: 'i' };
     }
-    const committees = await Committee.find(filter)
-      .populate('headUserId', 'name identifier')
-      .sort({ name: 1 });
-    res.json({ success: true, data: committees });
+    const { page, limit, skip } = getPagination(req.query);
+    const [committees, total] = await Promise.all([
+      Committee.find(filter)
+        .populate('headUserId', 'name identifier')
+        .sort({ name: 1 })
+        .skip(skip).limit(limit),
+      Committee.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: committees, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch committees' });
   }
@@ -218,16 +232,12 @@ router.post('/committees', validate(createCommitteeSchema), audit('create', 'com
   }
 });
 
-router.put('/committees/:id', async (req, res) => {
+router.put('/committees/:id', validate(updateCommitteeSchema), async (req, res) => {
   try {
-    const { name, description, status } = req.body;
-    const update = {};
-    if (name) update.name = name;
-    if (description !== undefined) update.description = description;
-    if (status) update.status = status;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const committee = await Committee.findOneAndUpdate(
       { _id: req.params.id, apartmentId: req.apartmentId },
-      update,
+      req.validatedBody,
       { new: true }
     );
     if (!committee) return res.status(404).json({ success: false, error: 'Committee not found' });
@@ -239,6 +249,7 @@ router.put('/committees/:id', async (req, res) => {
 
 router.delete('/committees/:id', audit('delete', 'committee'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     await Committee.findOneAndDelete({ _id: req.params.id, apartmentId: req.apartmentId });
     res.json({ success: true, data: { message: 'Committee deleted' } });
   } catch (err) {
@@ -248,6 +259,7 @@ router.delete('/committees/:id', audit('delete', 'committee'), async (req, res) 
 
 router.post('/committees/:id/head', validate(createCommitteeHeadSchema), audit('create', 'committee_head'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const committee = await Committee.findOne({ _id: req.params.id, apartmentId: req.apartmentId });
     if (!committee) return res.status(404).json({ success: false, error: 'Committee not found' });
 
@@ -282,10 +294,15 @@ router.post('/committees/:id/head', validate(createCommitteeHeadSchema), audit('
 
 router.get('/invoices', async (req, res) => {
   try {
-    const invoices = await SaaSInvoice.find({ apartmentId: req.apartmentId })
-      .populate('planId', 'name')
-      .sort({ generatedAt: -1 });
-    res.json({ success: true, data: invoices });
+    const { page, limit, skip } = getPagination(req.query);
+    const [invoices, total] = await Promise.all([
+      SaaSInvoice.find({ apartmentId: req.apartmentId })
+        .populate('planId', 'name')
+        .sort({ generatedAt: -1 })
+        .skip(skip).limit(limit),
+      SaaSInvoice.countDocuments({ apartmentId: req.apartmentId })
+    ]);
+    res.json({ success: true, data: invoices, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch invoices' });
   }
@@ -301,16 +318,9 @@ router.get('/settings', async (req, res) => {
   }
 });
 
-router.put('/settings', async (req, res) => {
+router.put('/settings', validate(updateApartmentSettingsSchema), async (req, res) => {
   try {
-    const { defaultCurrency, city, country, address, apartmentType } = req.body;
-    const update = {};
-    if (defaultCurrency) update.defaultCurrency = defaultCurrency;
-    if (city !== undefined) update.city = city;
-    if (country !== undefined) update.country = country;
-    if (address !== undefined) update.address = address;
-    if (apartmentType !== undefined) update.apartmentType = apartmentType;
-    const apartment = await Apartment.findByIdAndUpdate(req.apartmentId, update, { new: true });
+    const apartment = await Apartment.findByIdAndUpdate(req.apartmentId, req.validatedBody, { new: true });
     res.json({ success: true, data: apartment });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to update settings' });

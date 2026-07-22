@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, authorize, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -8,7 +9,7 @@ import {
   generateBillsSchema,
   createCustomRoleSchema,
 } from '../utils/validate.js';
-import { hashPassword } from '../utils/helpers.js';
+import { hashPassword, getPagination } from '../utils/helpers.js';
 import { User, Committee, CommitteeLedger, MaintenanceBill, Unit } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
 import { audit } from '../middleware/audit.js';
@@ -22,10 +23,15 @@ router.get('/', async (req, res) => {
     if (req.user.type === ROLES.COMMITTEE_HEAD || req.user.type === ROLES.COMMITTEE_MEMBER) {
       filter._id = req.user.committeeId;
     }
-    const committees = await Committee.find(filter)
-      .populate('headUserId', 'name identifier')
-      .sort({ name: 1 });
-    res.json({ success: true, data: committees });
+    const { page, limit, skip } = getPagination(req.query);
+    const [committees, total] = await Promise.all([
+      Committee.find(filter)
+        .populate('headUserId', 'name identifier')
+        .sort({ name: 1 })
+        .skip(skip).limit(limit),
+      Committee.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: committees, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch committees' });
   }
@@ -33,6 +39,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const committee = await Committee.findOne({
       _id: req.params.id,
       apartmentId: req.apartmentId,
@@ -46,12 +53,14 @@ router.get('/:id', async (req, res) => {
 
 router.get('/:id/members', async (req, res) => {
   try {
-    const members = await User.find({
-      apartmentId: req.apartmentId,
-      committeeId: req.params.id,
-      type: { $in: [ROLES.COMMITTEE_HEAD, ROLES.COMMITTEE_MEMBER] },
-    }).select('-passwordHash').sort({ type: 1, name: 1 });
-    res.json({ success: true, data: members });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
+    const filter = { apartmentId: req.apartmentId, committeeId: req.params.id, type: { $in: [ROLES.COMMITTEE_HEAD, ROLES.COMMITTEE_MEMBER] } };
+    const { page, limit, skip } = getPagination(req.query);
+    const [members, total] = await Promise.all([
+      User.find(filter).select('-passwordHash').sort({ type: 1, name: 1 }).skip(skip).limit(limit),
+      User.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: members, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch members' });
   }
@@ -59,6 +68,7 @@ router.get('/:id/members', async (req, res) => {
 
 router.get('/:id/available-users', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const existingMemberIds = await User.find({
       apartmentId: req.apartmentId,
       committeeId: req.params.id,
@@ -78,6 +88,7 @@ router.get('/:id/available-users', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTME
 
 router.get('/:id/roles', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { CustomRole } = await import('../models/index.js');
     const roles = await CustomRole.find({ committeeId: req.params.id }).sort({ name: 1 });
     res.json({ success: true, data: roles });
@@ -88,6 +99,7 @@ router.get('/:id/roles', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN),
 
 router.post('/:id/roles', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), validate(createCustomRoleSchema), audit('create', 'custom_role'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { CustomRole } = await import('../models/index.js');
     const role = await CustomRole.create({
       committeeId: req.params.id,
@@ -103,6 +115,7 @@ router.post('/:id/roles', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN)
 
 router.delete('/:id/roles/:roleId', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), audit('delete', 'custom_role'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id) || !mongoose.Types.ObjectId.isValid(req.params.roleId)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { CustomRole } = await import('../models/index.js');
     await CustomRole.findOneAndDelete({ _id: req.params.roleId, committeeId: req.params.id });
     res.json({ success: true, data: { message: 'Role deleted' } });
@@ -113,6 +126,7 @@ router.delete('/:id/roles/:roleId', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTM
 
 router.post('/:id/members', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const committee = await Committee.findOne({ _id: req.params.id, apartmentId: req.apartmentId });
     if (!committee) return res.status(404).json({ success: false, error: 'Committee not found' });
 
@@ -162,6 +176,7 @@ router.post('/:id/members', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMI
 
 router.put('/:committeeId/members/:memberId', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.committeeId) || !mongoose.Types.ObjectId.isValid(req.params.memberId)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { role } = req.body;
     if (role && ['committee_member', 'committee_head'].includes(role)) {
       await User.findByIdAndUpdate(req.params.memberId, { type: role });
@@ -174,6 +189,7 @@ router.put('/:committeeId/members/:memberId', authorize(ROLES.COMMITTEE_HEAD, RO
 
 router.put('/:committeeId/members/:memberId/role', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.committeeId) || !mongoose.Types.ObjectId.isValid(req.params.memberId)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { customRole } = req.body;
     const user = await User.findOneAndUpdate(
       { _id: req.params.memberId, committeeId: req.params.committeeId },
@@ -189,6 +205,7 @@ router.put('/:committeeId/members/:memberId/role', authorize(ROLES.COMMITTEE_HEA
 
 router.delete('/:committeeId/members/:memberId', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), audit('delete', 'committee_member'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.committeeId) || !mongoose.Types.ObjectId.isValid(req.params.memberId)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     await User.findOneAndDelete({
       _id: req.params.memberId,
       apartmentId: req.apartmentId,
@@ -202,11 +219,14 @@ router.delete('/:committeeId/members/:memberId', authorize(ROLES.COMMITTEE_HEAD,
 
 router.get('/:id/ledger', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN), async (req, res) => {
   try {
-    const entries = await CommitteeLedger.find({
-      apartmentId: req.apartmentId,
-      committeeId: req.params.id,
-    }).populate('recordedBy', 'name').sort({ date: -1 });
-    res.json({ success: true, data: entries });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
+    const filter = { apartmentId: req.apartmentId, committeeId: req.params.id };
+    const { page, limit, skip } = getPagination(req.query);
+    const [entries, total] = await Promise.all([
+      CommitteeLedger.find(filter).populate('recordedBy', 'name').sort({ date: -1 }).skip(skip).limit(limit),
+      CommitteeLedger.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: entries, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch ledger' });
   }
@@ -214,6 +234,7 @@ router.get('/:id/ledger', authorize(ROLES.COMMITTEE_HEAD, ROLES.APARTMENT_ADMIN)
 
 router.post('/:id/ledger', authorize(ROLES.COMMITTEE_HEAD), validate(ledgerEntrySchema), audit('create', 'ledger_entry'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const entry = await CommitteeLedger.create({
       apartmentId: req.apartmentId,
       committeeId: req.params.id,
@@ -228,11 +249,14 @@ router.post('/:id/ledger', authorize(ROLES.COMMITTEE_HEAD), validate(ledgerEntry
 
 router.get('/:id/bills', async (req, res) => {
   try {
-    const bills = await MaintenanceBill.find({
-      apartmentId: req.apartmentId,
-      committeeId: req.params.id,
-    }).populate('unitId', 'unitNumber').sort({ dueDate: -1 });
-    res.json({ success: true, data: bills });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
+    const filter = { apartmentId: req.apartmentId, committeeId: req.params.id };
+    const { page, limit, skip } = getPagination(req.query);
+    const [bills, total] = await Promise.all([
+      MaintenanceBill.find(filter).populate('unitId', 'unitNumber').sort({ dueDate: -1 }).skip(skip).limit(limit),
+      MaintenanceBill.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: bills, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch bills' });
   }
@@ -240,6 +264,7 @@ router.get('/:id/bills', async (req, res) => {
 
 router.post('/:id/bills/generate', authorize(ROLES.COMMITTEE_HEAD), validate(generateBillsSchema), audit('create', 'bills'), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { amount, period, dueDate, currency } = req.validatedBody;
     const units = await Unit.find({ apartmentId: req.apartmentId, status: 'occupied' });
     const bills = await MaintenanceBill.insertMany(
@@ -261,6 +286,7 @@ router.post('/:id/bills/generate', authorize(ROLES.COMMITTEE_HEAD), validate(gen
 
 router.put('/bills/:billId/pay', authorize(ROLES.RESIDENT), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.billId)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const unit = await Unit.findOne({ residentUserId: req.user.userId });
     if (!unit) return res.status(404).json({ success: false, error: 'Unit not found' });
 

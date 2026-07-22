@@ -19,7 +19,7 @@ module.exports = async function globalSetup() {
   const qIndex = uri.indexOf('?');
   const testUri = qIndex >= 0
     ? uri.slice(0, qIndex).replace(/\/?$/, '/acms_test') + '?' + uri.slice(qIndex + 1)
-    : uri.replace(/\/?$/, '/acms_test');
+    : uri.replace(/\/?$/, '') + '_test';
 
   writeFileSync('/tmp/acms-test-mongo-uri.json', JSON.stringify({ uri: testUri }));
   console.log('Test DB:', testUri);

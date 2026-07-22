@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 import { ROLE_LABELS } from '../utils/constants';
 import toast from 'react-hot-toast';
 
 export default function AccountPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
   const handleSubmit = async (e) => {
@@ -29,6 +30,8 @@ export default function AccountPage() {
       toast.error(err.response?.data?.error || 'Failed to change password');
     }
   };
+
+  if (authLoading) return <LoadingSkeleton lines={6} />;
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
