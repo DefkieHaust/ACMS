@@ -13,7 +13,7 @@ import {
   updateApartmentSettingsSchema,
 } from '../utils/validate.js';
 import { hashPassword, escapeRegex, getPagination } from '../utils/helpers.js';
-import { User, Unit, Committee, SaaSInvoice, Apartment } from '../models/index.js';
+import { User, Unit, Committee, SaaSInvoice, Apartment, MaintenanceBill } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
 import { audit } from '../middleware/audit.js';
 
@@ -305,6 +305,33 @@ router.get('/invoices', async (req, res) => {
     res.json({ success: true, data: invoices, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch invoices' });
+  }
+});
+
+router.get('/payment-history', async (req, res) => {
+  try {
+    const { unitId, residentId } = req.query;
+    let filter = { apartmentId: req.apartmentId, status: 'paid' };
+    if (unitId) {
+      if (!mongoose.Types.ObjectId.isValid(unitId)) return res.status(400).json({ success: false, error: 'Invalid unit ID' });
+      filter.unitId = unitId;
+    }
+    if (residentId) {
+      if (!mongoose.Types.ObjectId.isValid(residentId)) return res.status(400).json({ success: false, error: 'Invalid resident ID' });
+      const unit = await Unit.findOne({ residentUserId: residentId, apartmentId: req.apartmentId });
+      if (unit) filter.unitId = unit._id;
+    }
+    const { page, limit, skip } = getPagination(req.query);
+    const [payments, total] = await Promise.all([
+      MaintenanceBill.find(filter)
+        .populate('unitId', 'unitNumber')
+        .populate('committeeId', 'name')
+        .sort({ updatedAt: -1 }).skip(skip).limit(limit),
+      MaintenanceBill.countDocuments(filter)
+    ]);
+    res.json({ success: true, data: payments, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch payment history' });
   }
 });
 

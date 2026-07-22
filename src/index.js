@@ -25,6 +25,7 @@ import notificationRoutes from './routes/notifications.js';
 import documentRoutes from './routes/documents.js';
 import serviceRequestRoutes from './routes/serviceRequests.js';
 import paymentRoutes from './routes/payments.js';
+import auditLogRoutes from './routes/auditLogs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
@@ -59,6 +60,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/service-requests', serviceRequestRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });

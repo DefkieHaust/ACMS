@@ -16,10 +16,13 @@ export default function MembersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editMember, setEditMember] = useState(null);
-  const [form, setForm] = useState({ userId: '', role: 'committee_member' });
-  const [editForm, setEditForm] = useState({ role: 'committee_member' });
+  const [form, setForm] = useState({ userId: '', role: 'committee_member', customRole: '' });
+  const [editForm, setEditForm] = useState({ role: 'committee_member', customRole: '' });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
+  const [customRoles, setCustomRoles] = useState([]);
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
 
   const fetchMembers = () => {
     if (user?.committeeId) {
@@ -35,7 +38,15 @@ export default function MembersPage() {
     }
   };
 
-  useEffect(() => { fetchMembers(); }, [user?.committeeId]);
+  const fetchCustomRoles = () => {
+    if (user?.committeeId) {
+      api.get(`/committees/${user.committeeId}/roles`)
+        .then((r) => setCustomRoles(r.data))
+        .catch(() => {});
+    }
+  };
+
+  useEffect(() => { fetchMembers(); fetchCustomRoles(); }, [user?.committeeId]);
 
   useEffect(() => {
     if (user?.apartmentId) {
@@ -46,13 +57,13 @@ export default function MembersPage() {
   }, [user?.apartmentId]);
 
   const openAdd = () => {
-    setForm({ userId: '', role: 'committee_member' });
+    setForm({ userId: '', role: 'committee_member', customRole: '' });
     setModalOpen(true);
   };
 
   const openEditRole = (m) => {
     setEditMember(m);
-    setEditForm({ role: m.role || 'committee_member' });
+    setEditForm({ role: m.role || 'committee_member', customRole: m.customRole || m.userId?.customRole || '' });
     setEditModalOpen(true);
   };
 
@@ -71,12 +82,40 @@ export default function MembersPage() {
   const handleUpdateRole = async (e) => {
     e.preventDefault();
     try {
-      await api.put(`/committees/${user.committeeId}/members/${editMember._id}`, editForm);
+      if (editForm.customRole !== (editMember.customRole || editMember.userId?.customRole || '')) {
+        await api.put(`/committees/${user.committeeId}/members/${editMember._id}/role`, { customRole: editForm.customRole });
+      }
+      await api.put(`/committees/${user.committeeId}/members/${editMember._id}`, { role: editForm.role });
       toast.success('Role updated');
       setEditModalOpen(false);
       fetchMembers();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update role');
+    }
+  };
+
+  const handleCreateRole = async (e) => {
+    e.preventDefault();
+    if (!newRoleName.trim()) return;
+    try {
+      await api.post(`/committees/${user.committeeId}/roles`, { name: newRoleName.trim() });
+      toast.success('Custom role created');
+      setNewRoleName('');
+      setRoleModalOpen(false);
+      fetchCustomRoles();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to create role');
+    }
+  };
+
+  const handleDeleteRole = async (roleId) => {
+    if (!window.confirm('Delete this custom role?')) return;
+    try {
+      await api.delete(`/committees/${user.committeeId}/roles/${roleId}`);
+      toast.success('Role deleted');
+      fetchCustomRoles();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete role');
     }
   };
 
@@ -102,7 +141,10 @@ export default function MembersPage() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Committee Members</h1>
-        <button onClick={openAdd} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Member</button>
+        <div className="flex gap-2">
+          <button onClick={() => { setNewRoleName(''); setRoleModalOpen(true); }} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Manage Roles</button>
+          <button onClick={openAdd} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Member</button>
+        </div>
       </div>
 
       {error && (
@@ -118,7 +160,8 @@ export default function MembersPage() {
             <tr>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Name</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Identifier</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Role</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Role</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Custom Role</th>
               <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -132,6 +175,7 @@ export default function MembersPage() {
                     {m.role === 'committee_head' ? 'Head' : ROLE_LABELS[m.role] || 'Member'}
                   </span>
                 </td>
+                <td className="px-6 py-4 text-gray-600 text-sm">{m.customRole || m.userId?.customRole || '-'}</td>
                 <td className="px-6 py-4 text-right space-x-2">
                   <button onClick={() => openEditRole(m)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Change Role</button>
                   {m.role !== 'committee_head' && (
@@ -164,6 +208,13 @@ export default function MembersPage() {
               <option value="committee_head">Committee Head</option>
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Custom Role</label>
+            <select value={form.customRole} onChange={(e) => setForm({ ...form, customRole: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              <option value="">None</option>
+              {customRoles.map((r) => <option key={r._id} value={r.name}>{r.name}</option>)}
+            </select>
+          </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Add</button>
             <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
@@ -180,11 +231,36 @@ export default function MembersPage() {
               <option value="committee_head">Committee Head</option>
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Custom Role</label>
+            <select value={editForm.customRole} onChange={(e) => setEditForm({ ...editForm, customRole: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              <option value="">None</option>
+              {customRoles.map((r) => <option key={r._id} value={r.name}>{r.name}</option>)}
+            </select>
+          </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Update</button>
             <button type="button" onClick={() => setEditModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={roleModalOpen} onClose={() => setRoleModalOpen(false)} title="Custom Roles">
+        <div className="space-y-4">
+          <form onSubmit={handleCreateRole} className="flex gap-2">
+            <input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="Role name..." className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Add</button>
+          </form>
+          <div className="divide-y divide-gray-100">
+            {customRoles.length === 0 && <p className="text-sm text-gray-500 py-4 text-center">No custom roles defined yet</p>}
+            {customRoles.map((r) => (
+              <div key={r._id} className="flex items-center justify-between py-2">
+                <span className="text-sm font-medium text-gray-900">{r.name}</span>
+                <button onClick={() => handleDeleteRole(r._id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Delete</button>
+              </div>
+            ))}
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -28,6 +28,8 @@ const BookingsPage = lazy(() => import('./pages/BookingsPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
 const ServiceRequestsPage = lazy(() => import('./pages/ServiceRequestsPage'));
+const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
+const PaymentHistoryPage = lazy(() => import('./pages/PaymentHistoryPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageLoading() {
@@ -91,12 +93,14 @@ export default function App() {
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
         <Route path="/service-requests" element={<ProtectedRoute><RoleRoute roles={['apartment_admin', 'resident']}><ServiceRequestsPage /></RoleRoute></ProtectedRoute>} />
+        <Route path="/payment-history" element={<ProtectedRoute><RoleRoute roles={['apartment_admin', 'resident']}><PaymentHistoryPage /></RoleRoute></ProtectedRoute>} />
 
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><SiteAdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/apartments" element={<AdminProtectedRoute><ApartmentsPage /></AdminProtectedRoute>} />
         <Route path="/admin/plans" element={<AdminProtectedRoute><PlansPage /></AdminProtectedRoute>} />
         <Route path="/admin/invoices" element={<AdminProtectedRoute><InvoicesPage /></AdminProtectedRoute>} />
         <Route path="/admin/account-management" element={<AdminProtectedRoute><AccountManagementPage /></AdminProtectedRoute>} />
+        <Route path="/admin/audit-logs" element={<AdminProtectedRoute><AuditLogsPage /></AdminProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
