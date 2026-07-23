@@ -21,6 +21,8 @@ export default function ApartmentsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -55,6 +57,11 @@ export default function ApartmentsPage() {
     setEditItem(a);
     setForm({ name: a.name, address: a.address, planId: a.planId?._id || '', city: a.city || '', country: a.country || '', apartmentType: a.apartmentType || 'residential', defaultCurrency: a.defaultCurrency || 'USD' });
     setEditOpen(true);
+  };
+
+  const openView = (a) => {
+    setViewItem(a);
+    setViewOpen(true);
   };
 
   const handleSubmit = async (e) => {
@@ -194,6 +201,7 @@ export default function ApartmentsPage() {
                   </td>
                   <td className="px-6 py-4 text-sm text-right">
                     <div className="flex flex-col gap-1 items-end">
+                      <button onClick={() => openView(a)} className="text-sm font-medium text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">View</button>
                       <button onClick={() => openEdit(a)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Edit</button>
                       <button onClick={() => { setConfirmId(a._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Delete</button>
                       <button onClick={() => { setSelectedApt(a); setAdminForm({ name: '', identifier: '', password: '' }); setAdminOpen(true); }} className="text-sm font-medium text-green-600 hover:text-green-700 dark:text-green-400 transition-colors">Create Admin</button>
@@ -283,6 +291,24 @@ export default function ApartmentsPage() {
             <Button type="button" variant="secondary" onClick={() => setAdminOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title={viewItem?.name || 'Apartment Details'}>
+        {viewItem && (
+          <div className="space-y-4 text-sm">
+            <div className="grid grid-cols-2 gap-4">
+              {[['Name', viewItem.name], ['Status', viewItem.status], ['Address', viewItem.address], ['City', viewItem.city || '-'], ['Country', viewItem.country || '-'], ['Type', viewItem.apartmentType || 'residential'], ['Currency', viewItem.defaultCurrency || 'USD'], ['Plan', viewItem.planId?.name || 'None']].map(([label, value]) => (
+                <div key={label}>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+                  <span className="block mt-1 text-gray-900 dark:text-white capitalize">{value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button type="button" variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

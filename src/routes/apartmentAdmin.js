@@ -46,6 +46,19 @@ router.get('/units', async (req, res) => {
   }
 });
 
+router.get('/units/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
+    const unit = await Unit.findOne({ _id: req.params.id, apartmentId: req.apartmentId })
+      .populate('residentUserId', 'name identifier phone')
+      .populate('ownerId', 'name identifier phone');
+    if (!unit) return res.status(404).json({ success: false, error: 'Unit not found' });
+    res.json({ success: true, data: unit });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch unit' });
+  }
+});
+
 router.post('/units', validate(createUnitSchema), audit('create', 'unit'), async (req, res) => {
   try {
     const unit = await Unit.create({ ...req.validatedBody, apartmentId: req.apartmentId });

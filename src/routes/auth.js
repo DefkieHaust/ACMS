@@ -80,13 +80,20 @@ router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
   }
 });
 
+const PRIVILEGED_ROLES = ['site_admin', 'committee_head', 'committee_member'];
+
 router.post('/change-password', authenticate, validate(changePasswordSchema), async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
-    const valid = await comparePassword(req.validatedBody.currentPassword, user.passwordHash);
-    if (!valid) return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+    const isPrivileged = PRIVILEGED_ROLES.includes(req.user.type);
+    if (req.validatedBody.currentPassword) {
+      const valid = await comparePassword(req.validatedBody.currentPassword, user.passwordHash);
+      if (!valid) return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+    } else if (!isPrivileged) {
+      return res.status(400).json({ success: false, error: 'Current password is required' });
+    }
 
     user.passwordHash = await hashPassword(req.validatedBody.newPassword);
     await user.save();

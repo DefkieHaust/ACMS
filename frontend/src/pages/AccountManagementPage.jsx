@@ -23,6 +23,8 @@ export default function AccountManagementPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -144,7 +146,7 @@ export default function AccountManagementPage() {
       return;
     }
     try {
-      await api.post('/auth/change-password', { currentPassword: changeOwnPw.currentPassword, newPassword: changeOwnPw.newPassword });
+      await api.post('/auth/change-password', { newPassword: changeOwnPw.newPassword });
       toast.success('Password changed');
       setChangeOwnPw({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
@@ -226,6 +228,7 @@ export default function AccountManagementPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-right">
                       <div className="flex flex-col gap-1 items-end">
+                        <button onClick={() => { setViewItem(a); setViewOpen(true); }} className="text-sm font-medium text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">View</button>
                         <button onClick={() => openEdit(a)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Edit</button>
                         <button onClick={() => openChangePassword(a)} className="text-sm font-medium text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 transition-colors">Password</button>
                         <button onClick={() => { setConfirmId(a._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Delete</button>
@@ -244,10 +247,6 @@ export default function AccountManagementPage() {
         <h2 className="text-xl font-display font-bold text-gray-900 dark:text-white mb-4">Change Your Password</h2>
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 max-w-md">
           <form onSubmit={handleChangeOwnPassword} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Current Password</label>
-              <input type="password" required value={changeOwnPw.currentPassword} onChange={(e) => setChangeOwnPw({ ...changeOwnPw, currentPassword: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">New Password</label>
               <input type="password" required minLength={6} value={changeOwnPw.newPassword} onChange={(e) => setChangeOwnPw({ ...changeOwnPw, newPassword: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
@@ -324,10 +323,6 @@ export default function AccountManagementPage() {
       <Modal open={pwOpen} onClose={() => setPwOpen(false)} title="Change User Password">
         <form onSubmit={handleChangeUserPassword} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Current Password</label>
-            <input type="password" required value={pwForm.currentPassword} onChange={(e) => setPwForm({ ...pwForm, currentPassword: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
-          </div>
-          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">New Password</label>
             <input type="password" required minLength={6} value={pwForm.newPassword} onChange={(e) => setPwForm({ ...pwForm, newPassword: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
@@ -340,6 +335,24 @@ export default function AccountManagementPage() {
             <Button type="button" variant="secondary" onClick={() => setPwOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title={viewItem?.name || 'Account Details'}>
+        {viewItem && (
+          <div className="space-y-4 text-sm">
+            <div className="grid grid-cols-2 gap-4">
+              {[['Name', viewItem.name], ['Identifier', viewItem.identifier], ['Type', viewItem.type], ['Apartment', viewItem.apartmentId?.name || '-'], ['Status', viewItem.status], ['Email', viewItem.email || '-'], ['Phone', viewItem.phone?.join(', ') || '-'], ['Identity', viewItem.identityNumber || '-'], ['Custom Role', viewItem.customRole || '-']].map(([label, value]) => (
+                <div key={label}>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+                  <span className="block mt-1 text-gray-900 dark:text-white">{value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button type="button" variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -30,7 +30,7 @@ function ThemeToggle() {
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="p-2 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 transition-all duration-200"
+      className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800/50 transition-all duration-200"
       aria-label="Toggle dark mode"
     >
       {dark ? (
@@ -60,11 +60,11 @@ function Sidebar({ navItems, pathname, onNavigate }) {
             className={`group flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
               active
                 ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800/50'
             }`}
           >
             <span className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
-              active ? 'bg-white' : 'bg-gray-600 group-hover:bg-gray-400'
+              active ? 'bg-white' : 'bg-gray-300 dark:bg-gray-600 group-hover:bg-gray-500 dark:group-hover:bg-gray-400'
             }`} />
             {t('nav.' + item.navKey)}
           </Link>
@@ -142,9 +142,9 @@ export default function Layout({ children }) {
 
         <aside className={`${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-20 w-64 bg-gray-950 dark:bg-black transform transition-transform duration-300 ease-out overflow-y-auto pt-20 lg:pt-6`}>
+        } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-20 w-64 bg-white border-r border-gray-200 dark:bg-gray-950 dark:border-gray-800 transform transition-transform duration-300 ease-out overflow-y-auto pt-20 lg:pt-6`}>
           <div className="px-6 mb-6 hidden lg:block">
-            <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
           </div>
           <Sidebar navItems={navItems} pathname={location.pathname} onNavigate={() => setSidebarOpen(false)} />
         </aside>

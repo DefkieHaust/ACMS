@@ -41,6 +41,17 @@ router.get('/apartments', async (req, res) => {
   }
 });
 
+router.get('/apartments/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
+    const apartment = await Apartment.findById(req.params.id).populate('planId');
+    if (!apartment) return res.status(404).json({ success: false, error: 'Apartment not found' });
+    res.json({ success: true, data: apartment });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch apartment' });
+  }
+});
+
 router.post('/apartments', validate(createApartmentSchema), audit('create', 'apartment'), async (req, res) => {
   try {
     const data = { ...req.validatedBody };

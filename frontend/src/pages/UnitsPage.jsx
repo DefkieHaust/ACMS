@@ -28,6 +28,8 @@ export default function UnitsPage() {
   const [owners, setOwners] = useState([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -147,7 +149,8 @@ export default function UnitsPage() {
               {u.residentUserId && (
                 <p className="text-sm text-gray-600 dark:text-gray-400">Resident: {u.residentUserId.name}</p>
               )}
-              <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <button onClick={() => { setViewItem(u); setViewOpen(true); }} className="text-sm font-medium text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">View</button>
                 <button onClick={() => openEdit(u)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Edit</button>
                 <button onClick={() => { setConfirmId(u._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Delete</button>
               </div>
@@ -189,6 +192,24 @@ export default function UnitsPage() {
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title={`Unit ${viewItem?.unitNumber || ''}`}>
+        {viewItem && (
+          <div className="space-y-4 text-sm">
+            <div className="grid grid-cols-2 gap-4">
+              {[['Unit Number', viewItem.unitNumber], ['Status', viewItem.status], ['Type', viewItem.unitType || 'apartment'], ['Resident', viewItem.residentUserId?.name || 'None'], ['Owner', viewItem.ownerId?.name || 'None']].map(([label, value]) => (
+                <div key={label}>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+                  <span className="block mt-1 text-gray-900 dark:text-white capitalize">{value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button type="button" variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

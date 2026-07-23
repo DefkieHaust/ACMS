@@ -19,6 +19,8 @@ export default function CommitteesPage() {
   const [headForm, setHeadForm] = useState({ name: '', identifier: '', password: '' });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
 
   const fetchCommittees = () => {
     setLoading(true);
@@ -141,6 +143,7 @@ export default function CommitteesPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Head: {c.headUserId?.name || 'Not assigned'}</p>
             {c.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{c.description}</p>}
             <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button onClick={() => { setViewItem(c); setViewOpen(true); }} className="text-sm font-medium text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">View</button>
               <button onClick={() => openEdit(c)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Edit</button>
               <button onClick={() => { setConfirmId(c._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Delete</button>
               {!c.headUserId && (
@@ -212,6 +215,24 @@ export default function CommitteesPage() {
             <Button type="button" variant="secondary" onClick={() => setHeadModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title={viewItem?.name || 'Committee Details'}>
+        {viewItem && (
+          <div className="space-y-4 text-sm">
+            <div className="grid grid-cols-2 gap-4">
+              {[['Name', viewItem.name], ['Status', viewItem.status || 'active'], ['Head', viewItem.headUserId?.name || 'Not assigned'], ['Description', viewItem.description || '-']].map(([label, value]) => (
+                <div key={label} className={label === 'Description' ? 'col-span-2' : ''}>
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+                  <span className="block mt-1 text-gray-900 dark:text-white">{value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button type="button" variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
