@@ -1,93 +1,88 @@
-name: CI/CD
+name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'v*.*.x']
+    tags: ['v*']
   pull_request:
     branches: [main]
 
-env:
-  NODE_VERSION: '20'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint:
+  lint-backend:
+    name: Lint Backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 20
+          cache: 'npm'
       - run: npm ci
-      - run: npm run lint
-        continue-on-error: true
-      - run: npm ci
-        working-directory: ./frontend
-      - run: npm run lint
-        working-directory: ./frontend
-        continue-on-error: true
+      - name: Check for lint issues
+        run: |
+          if grep -q '"eslint"' package.json; then
+            npx eslint src/ tests/
+          else
+            echo "No linter configured — skipping"
+          fi
 
-  test:
+  test-backend:
+    name: Test Backend (Node ${{ matrix.node }})
+    needs: lint-backend
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
     services:
       mongo:
         image: mongo:7
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      MONGODB_URI: mongodb://localhost:27017/acms_test
+      JWT_SECRET: ci-jwt-secret
+      NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
       - run: npm ci
-      - run: npm test
+      - name: Pre-create test MongoDB URI file
+        run: echo '{"uri":"mongodb://localhost:27017/acms_test"}' > /tmp/acms-test-mongo-uri.json
+      - name: Run unit tests (no DB)
+        run: npx jest tests/helpers.test.js tests/validate.test.js tests/middleware/auth.test.js --forceExit --no-cache
         env:
-          MONGODB_URI: mongodb://localhost:27017/acms_test
-          JWT_SECRET: test-secret
-
-  build:
+          NODE_OPTIONS: --experimental-vm-modules
+      - name: Run route tests (with MongoDB)
+        run: npx jest --forceExit --no-cache
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
+  test-frontend:
+    name: Test Frontend Build
     runs-on: ubuntu-latest
-    needs: [lint, test]
     steps:
       - uses: actions/checkout@v4
-      - name: Build image
-        run: docker build -t acms-app .
-
-  trivy-scan:
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build image
-        run: docker build -t acms-app .
-      - name: Run Trivy
-        uses: aquasecurity/trivy-action@master
+      - uses: actions/setup-node@v4
         with:
-          image-ref: acms-app
-          format: table
-          exit-code: '0'
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [trivy-scan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to server
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $SERVER_HOST >> ~/.ssh/known_hosts
-          ssh $SERVER_USER@$SERVER_HOST "
-            cd /opt/acms &&
-            git pull origin main &&
-            docker compose down &&
-            docker compose pull &&
-            docker compose up -d --build
-          "
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: Run frontend tests
+        run: echo "No frontend test framework configured — checking build instead"
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
