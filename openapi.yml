@@ -3,9 +3,11 @@ info:
   title: ACMS - Apartment Committee Management System
   description: |
     Multi-tenant SaaS platform for apartment/housing societies.
-    Five role types: site_admin, apartment_admin, committee_head, committee_member, resident.
+    Six role types: site_admin, apartment_admin, committee_head, committee_member, resident, unit_owner.
     Tenant isolation via `apartmentId` — all non-site-admin queries are scoped.
-  version: 1.0.0
+    All list endpoints support pagination: `?page=1&limit=20`.
+    Response envelope: `{ success: boolean, data?: ..., error?: string, details?: ..., pagination?: { total, page, limit, totalPages } }`.
+  version: 1.8.0
   contact:
     name: ACMS Team
 
@@ -24,16 +26,22 @@ components:
     # ────────── Enums ──────────
     RoleType:
       type: string
-      enum: [site_admin, apartment_admin, committee_head, committee_member, resident]
+      enum: [site_admin, apartment_admin, committee_head, committee_member, resident, unit_owner]
     CommitteeRole:
       type: string
       enum: [committee_head, committee_member]
     ApartmentStatus:
       type: string
       enum: [active, suspended]
+    UserStatus:
+      type: string
+      enum: [active, inactive]
     PlanPriceType:
       type: string
       enum: [per-unit, flat]
+    BillingCycle:
+      type: string
+      enum: [monthly]
     LedgerType:
       type: string
       enum: [income, expense]
@@ -46,6 +54,48 @@ components:
     ComplaintStatus:
       type: string
       enum: [open, in_progress, resolved]
+    UnitStatus:
+      type: string
+      enum: [occupied, vacant]
+    ServiceRequestStatus:
+      type: string
+      enum: [open, in_progress, completed, cancelled]
+    ServicePriority:
+      type: string
+      enum: [low, medium, high, urgent]
+    BookingStatus:
+      type: string
+      enum: [confirmed, cancelled]
+    VisitorStatus:
+      type: string
+      enum: [pre_approved, checked_in]
+    ResidentType:
+      type: string
+      enum: [tenant, owner_family, owner]
+
+    # ────────── Pagination ──────────
+    Pagination:
+      type: object
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        limit: { type: integer }
+        totalPages: { type: integer }
+
+    # ────────── API Envelope ──────────
+    ApiResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: {}
+        error: { type: string }
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
 
     # ────────── Auth ──────────
     LoginRequest:
@@ -71,18 +121,28 @@ components:
     LoginResponse:
       type: object
       properties:
-        token:
-          type: string
+        token: { type: string }
         user:
           type: object
           properties:
             id: { type: string }
             name: { type: string }
             type: { $ref: '#/components/schemas/RoleType' }
+            residentType: { type: string, nullable: true }
             apartmentId: { type: string, nullable: true }
             committeeId: { type: string, nullable: true }
             unitId: { type: string, nullable: true }
             unitNumber: { type: string, nullable: true }
+            phone: { type: array, items: { type: string } }
+            identityNumber: { type: string }
+            residence: { type: string }
+
+    ChangePasswordRequest:
+      type: object
+      required: [newPassword]
+      properties:
+        currentPassword: { type: string, description: Optional for site_admin, committee_head, committee_member }
+        newPassword: { type: string, minLength: 6 }
 
     ApartmentInfo:
       type: object
@@ -90,14 +150,21 @@ components:
         _id: { type: string }
         name: { type: string }
         address: { type: string }
+        city: { type: string }
+        country: { type: string }
+        apartmentType: { type: string }
 
-    # ────────── Apartment (Admin) ──────────
+    # ────────── Apartment ──────────
     Apartment:
       type: object
       properties:
         _id: { type: string }
         name: { type: string }
         address: { type: string }
+        city: { type: string }
+        country: { type: string }
+        apartmentType: { type: string }
+        defaultCurrency: { type: string }
         status: { $ref: '#/components/schemas/ApartmentStatus' }
         planId: { type: string, nullable: true, description: 'Plan ID or populated object' }
         createdAt: { type: string, format: date-time }
@@ -108,27 +175,21 @@ components:
       properties:
         name: { type: string, description: Unique apartment name (lowercased) }
         address: { type: string }
+        city: { type: string }
+        country: { type: string }
+        apartmentType: { type: string }
+        defaultCurrency: { type: string, default: USD }
 
     UpdateApartmentRequest:
       type: object
       properties:
         address: { type: string }
+        city: { type: string }
+        country: { type: string }
+        apartmentType: { type: string }
+        defaultCurrency: { type: string }
         status: { $ref: '#/components/schemas/ApartmentStatus' }
         planId: { type: string, nullable: true }
-
-    CreateApartmentAdminRequest:
-      type: object
-      required: [apartmentId, name, identifier, password]
-      properties:
-        apartmentId: { type: string }
-        name: { type: string }
-        identifier: { type: string, description: Login username }
-        password: { type: string, minLength: 6 }
-      example:
-        apartmentId: 664abc...
-        name: John Doe
-        identifier: johndoe
-        password: securepass123
 
     # ────────── Plan ──────────
     Plan:
@@ -138,7 +199,8 @@ components:
         name: { type: string }
         priceType: { $ref: '#/components/schemas/PlanPriceType' }
         price: { type: number }
-        billingCycle: { type: string, default: monthly }
+        currency: { type: string, default: USD }
+        billingCycle: { $ref: '#/components/schemas/BillingCycle' }
         features: { type: array, items: { type: string } }
 
     CreatePlanRequest:
@@ -148,6 +210,7 @@ components:
         name: { type: string }
         priceType: { $ref: '#/components/schemas/PlanPriceType' }
         price: { type: number, exclusiveMinimum: 0 }
+        currency: { type: string, default: USD }
         features: { type: array, items: { type: string } }
 
     # ────────── SaaS Invoice ──────────
@@ -155,10 +218,11 @@ components:
       type: object
       properties:
         _id: { type: string }
-        apartmentId: { type: string, description: Apartment ID or populated object }
-        planId: { type: string, description: Plan ID or populated object }
+        apartmentId: { type: string, description: 'Apartment ID or populated { _id, name }' }
+        planId: { type: string, description: 'Plan ID or populated { _id, name }' }
         period: { type: string, example: '2026-07' }
         amount: { type: number }
+        currency: { type: string }
         status: { $ref: '#/components/schemas/InvoiceStatus' }
         generatedAt: { type: string, format: date-time }
         dueDate: { type: string, format: date-time }
@@ -176,18 +240,51 @@ components:
         _id: { type: string }
         apartmentId: { type: string }
         unitNumber: { type: string }
+        unitType: { type: string }
         residentUserId: { type: string, nullable: true, description: 'User ID or populated object' }
-        status: { type: string, enum: [occupied, vacant] }
+        ownerId: { type: string, nullable: true, description: 'User ID or populated object' }
+        status: { $ref: '#/components/schemas/UnitStatus' }
+        residentHistory: { type: array, items: { type: object } }
 
     CreateUnitRequest:
       type: object
       required: [unitNumber]
       properties:
         unitNumber: { type: string, example: A-101 }
-        status: { type: string, enum: [occupied, vacant], default: vacant }
+        unitType: { type: string }
         residentUserId: { type: string, nullable: true }
+        ownerId: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/UnitStatus' }
 
-    # ────────── Resident ──────────
+    UpdateUnitRequest:
+      type: object
+      properties:
+        unitNumber: { type: string }
+        unitType: { type: string }
+        residentUserId: { type: string, nullable: true }
+        ownerId: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/UnitStatus' }
+
+    # ────────── User / Resident / Account ──────────
+    User:
+      type: object
+      properties:
+        _id: { type: string }
+        apartmentId: { type: string, nullable: true }
+        type: { $ref: '#/components/schemas/RoleType' }
+        residentType: { type: string, nullable: true }
+        committeeId: { type: string, nullable: true }
+        unitId: { type: string, nullable: true }
+        name: { type: string }
+        identifier: { type: string }
+        phone: { type: array, items: { type: string } }
+        email: { type: string }
+        identityNumber: { type: string }
+        residence: { type: string }
+        customRole: { type: string }
+        status: { $ref: '#/components/schemas/UserStatus' }
+        createdAt: { type: string, format: date-time }
+
     Resident:
       type: object
       properties:
@@ -195,26 +292,48 @@ components:
         name: { type: string }
         identifier: { type: string }
         type: { type: string }
-        unitId: { nullable: true }
+        residentType: { type: string, nullable: true }
+        unitId: { type: string, nullable: true, description: 'Unit ID or populated { _id, unitNumber }' }
         unitNumber: { type: string, nullable: true }
-        status: { type: string }
+        phone: { type: array, items: { type: string } }
+        identityNumber: { type: string }
+        residence: { type: string }
+        status: { $ref: '#/components/schemas/UserStatus' }
         createdAt: { type: string, format: date-time }
 
-    CreateResidentRequest:
+    CreateUserRequest:
       type: object
       required: [name, identifier, password]
       properties:
+        type: { $ref: '#/components/schemas/RoleType' }
         name: { type: string }
-        identifier: { type: string, description: Login ID (unit number) }
+        identifier: { type: string }
         password: { type: string, minLength: 6 }
+        phone: { type: array, items: { type: string } }
+        email: { type: string }
+        identityNumber: { type: string }
+        residence: { type: string }
         unitId: { type: string, nullable: true }
 
-    UpdateResidentRequest:
+    UpdateUserRequest:
       type: object
       properties:
         name: { type: string }
-        status: { type: string, enum: [active, inactive] }
+        status: { $ref: '#/components/schemas/UserStatus' }
         unitId: { type: string, nullable: true }
+        residentType: { type: string, nullable: true }
+        phone: { type: array, items: { type: string } }
+        email: { type: string }
+        identityNumber: { type: string }
+        residence: { type: string }
+        customRole: { type: string }
+
+    UpdateAccountRequest:
+      type: object
+      properties:
+        type: { $ref: '#/components/schemas/RoleType' }
+        apartmentId: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/UserStatus' }
 
     # ────────── Committee ──────────
     Committee:
@@ -223,15 +342,24 @@ components:
         _id: { type: string }
         apartmentId: { type: string }
         name: { type: string }
-        headUserId: { type: string, nullable: true, description: 'User ID or populated' }
-        createdAt: { type: string, format: date-time }
+        description: { type: string }
+        headUserId: { type: string, nullable: true, description: 'User ID or populated { _id, name, identifier }' }
         status: { type: string, enum: [active, inactive] }
+        createdAt: { type: string, format: date-time }
 
     CreateCommitteeRequest:
       type: object
       required: [name]
       properties:
         name: { type: string, example: Maintenance Committee }
+        description: { type: string }
+
+    UpdateCommitteeRequest:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [active, inactive] }
 
     CreateCommitteeHeadRequest:
       type: object
@@ -240,6 +368,9 @@ components:
         name: { type: string }
         identifier: { type: string }
         password: { type: string, minLength: 6 }
+        phone: { type: array, items: { type: string } }
+        identityNumber: { type: string }
+        residence: { type: string }
 
     CommitteeMember:
       type: object
@@ -250,14 +381,42 @@ components:
         type: { $ref: '#/components/schemas/CommitteeRole' }
         name: { type: string }
         identifier: { type: string }
+        customRole: { type: string }
+        status: { $ref: '#/components/schemas/UserStatus' }
 
-    CreateCommitteeMemberRequest:
+    AddMemberRequest:
       type: object
-      required: [name, identifier, password]
+      properties:
+        userId: { type: string, description: 'Existing user ID to add as member' }
+        name: { type: string, description: 'For new member creation' }
+        identifier: { type: string, description: 'For new member creation' }
+        password: { type: string, minLength: 6, description: 'For new member creation' }
+        phone: { type: array, items: { type: string } }
+        identityNumber: { type: string }
+        residence: { type: string }
+        customRole: { type: string }
+
+    UpdateMemberRoleRequest:
+      type: object
+      properties:
+        role: { $ref: '#/components/schemas/CommitteeRole' }
+        customRole: { type: string }
+
+    # ────────── Custom Role ──────────
+    CustomRole:
+      type: object
+      properties:
+        _id: { type: string }
+        committeeId: { type: string }
+        name: { type: string }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    CreateCustomRoleRequest:
+      type: object
+      required: [name]
       properties:
         name: { type: string }
-        identifier: { type: string }
-        password: { type: string, minLength: 6 }
 
     # ────────── Committee Ledger ──────────
     LedgerEntry:
@@ -270,7 +429,7 @@ components:
         amount: { type: number }
         description: { type: string }
         date: { type: string, format: date-time }
-        recordedBy: { type: string, description: 'User ID or populated' }
+        recordedBy: { type: string, description: 'User ID or populated { _id, name }' }
 
     CreateLedgerEntryRequest:
       type: object
@@ -281,16 +440,17 @@ components:
         description: { type: string }
         date: { type: string, format: date-time, description: Defaults to now }
 
-    # ────────── Maintenance Bills ──────────
+    # ────────── Maintenance Bill ──────────
     MaintenanceBill:
       type: object
       properties:
         _id: { type: string }
         apartmentId: { type: string }
-        committeeId: { type: string, description: 'Committee ID or populated' }
-        unitId: { type: string, description: 'Unit ID or populated' }
+        committeeId: { type: string, description: 'Committee ID or populated { _id, name }' }
+        unitId: { type: string, description: 'Unit ID or populated { _id, unitNumber }' }
         amount: { type: number }
-        period: { type: string }
+        currency: { type: string }
+        period: { type: string, example: 2026-07 }
         status: { $ref: '#/components/schemas/BillStatus' }
         dueDate: { type: string, format: date-time }
 
@@ -299,20 +459,22 @@ components:
       required: [amount, period, dueDate]
       properties:
         amount: { type: number, exclusiveMinimum: 0 }
-        period: { type: string, example: '2026-07' }
+        period: { type: string, example: 2026-07 }
         dueDate: { type: string, format: date-time }
+        currency: { type: string, default: USD }
 
-    # ────────── Complaints ──────────
+    # ────────── Complaint ──────────
     Complaint:
       type: object
       properties:
         _id: { type: string }
         apartmentId: { type: string }
-        committeeId: { type: string, description: 'Committee ID or populated' }
-        raisedByUnitId: { type: string, description: 'Unit ID or populated' }
+        committeeId: { type: string, description: 'Committee ID or populated { _id, name }' }
+        raisedByUnitId: { type: string, description: 'Unit ID or populated { _id, unitNumber }' }
+        title: { type: string }
         description: { type: string }
         status: { $ref: '#/components/schemas/ComplaintStatus' }
-        assignedTo: { type: string, nullable: true, description: 'User ID or populated' }
+        assignedTo: { type: string, nullable: true, description: 'User ID or populated { _id, name }' }
         createdAt: { type: string, format: date-time }
         resolvedAt: { type: string, format: date-time, nullable: true }
         rating: { type: integer, minimum: 1, maximum: 5, nullable: true }
@@ -322,6 +484,7 @@ components:
       required: [committeeId, description]
       properties:
         committeeId: { type: string }
+        title: { type: string }
         description: { type: string }
 
     UpdateComplaintRequest:
@@ -329,12 +492,6 @@ components:
       properties:
         status: { $ref: '#/components/schemas/ComplaintStatus' }
         assignedTo: { type: string }
-        rating: { type: integer, minimum: 1, maximum: 5 }
-
-    RateComplaintRequest:
-      type: object
-      required: [rating]
-      properties:
         rating: { type: integer, minimum: 1, maximum: 5 }
 
     # ────────── Visitor Log ──────────
@@ -346,9 +503,13 @@ components:
         visitorName: { type: string }
         purpose: { type: string }
         unitVisited: { type: string }
-        loggedBy: { type: string, description: 'User ID or populated' }
+        phone: { type: string }
+        loggedBy: { type: string, description: 'User ID or populated { _id, name }' }
         checkIn: { type: string, format: date-time }
         checkOut: { type: string, format: date-time, nullable: true }
+        preApproved: { type: boolean }
+        qrCode: { type: string }
+        preApprovedBy: { type: string, nullable: true }
 
     CreateVisitorLogRequest:
       type: object
@@ -357,6 +518,7 @@ components:
         visitorName: { type: string }
         purpose: { type: string }
         unitVisited: { type: string, example: A-101 }
+        phone: { type: string }
 
     # ────────── Notice ──────────
     Notice:
@@ -367,7 +529,7 @@ components:
         committeeId: { type: string, nullable: true, description: 'Null = apartment-wide' }
         title: { type: string }
         body: { type: string }
-        postedBy: { type: string, description: 'User ID or populated' }
+        postedBy: { type: string, description: 'User ID or populated { _id, name }' }
         createdAt: { type: string, format: date-time }
 
     CreateNoticeRequest:
@@ -378,24 +540,269 @@ components:
         title: { type: string }
         body: { type: string }
 
-    # ────────── Error ──────────
-    ErrorResponse:
+    # ────────── Facility ──────────
+    Facility:
       type: object
       properties:
-        error: { type: string }
-        details: { type: array, items: { type: object, properties: { field: { type: string }, message: { type: string } } } }
+        _id: { type: string }
+        apartmentId: { type: string }
+        name: { type: string }
+        description: { type: string }
+        capacity: { type: integer }
+        available: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    CreateFacilityRequest:
+      type: object
+      required: [name, capacity]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        capacity: { type: integer, exclusiveMinimum: 0 }
+
+    UpdateFacilityRequest:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        capacity: { type: integer }
+        available: { type: boolean }
+
+    # ────────── Facility Booking ──────────
+    FacilityBooking:
+      type: object
+      properties:
+        _id: { type: string }
+        apartmentId: { type: string }
+        facilityId: { type: string, description: 'Facility ID or populated { _id, name }' }
+        unitId: { type: string, description: 'Unit ID or populated { _id, unitNumber }' }
+        date: { type: string, format: date }
+        startTime: { type: string, example: '10:00' }
+        endTime: { type: string, example: '12:00' }
+        purpose: { type: string }
+        status: { $ref: '#/components/schemas/BookingStatus' }
+        createdAt: { type: string, format: date-time }
+
+    CreateBookingRequest:
+      type: object
+      required: [date, startTime, endTime]
+      properties:
+        date: { type: string, format: date }
+        startTime: { type: string, example: '10:00' }
+        endTime: { type: string, example: '12:00' }
+        purpose: { type: string }
+
+    # ────────── Service Request ──────────
+    ServiceRequest:
+      type: object
+      properties:
+        _id: { type: string }
+        apartmentId: { type: string }
+        unitId: { type: string, description: 'Unit ID or populated { _id, unitNumber }' }
+        residentUserId: { type: string, description: 'User ID or populated { _id, name }' }
+        title: { type: string }
+        description: { type: string }
+        category: { type: string }
+        priority: { $ref: '#/components/schemas/ServicePriority' }
+        status: { $ref: '#/components/schemas/ServiceRequestStatus' }
+        assignedTo: { type: string, nullable: true }
+        notes: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CreateServiceRequestRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        category: { type: string, default: other }
+        priority: { $ref: '#/components/schemas/ServicePriority' }
+
+    UpdateServiceRequestRequest:
+      type: object
+      properties:
+        status: { $ref: '#/components/schemas/ServiceRequestStatus' }
+        assignedTo: { type: string }
+        notes: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+
+    # ────────── Document ──────────
+    Document:
+      type: object
+      properties:
+        _id: { type: string }
+        apartmentId: { type: string }
+        uploadedBy: { type: string, description: 'User ID or populated { _id, name }' }
+        originalName: { type: string }
+        mimeType: { type: string }
+        size: { type: integer }
+        category: { type: string }
+        description: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    # ────────── Upload ──────────
+    Upload:
+      type: object
+      properties:
+        _id: { type: string }
+        apartmentId: { type: string }
+        uploadedBy: { type: string }
+        originalName: { type: string }
+        mimeType: { type: string }
+        size: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    # ────────── Notification ──────────
+    Notification:
+      type: object
+      properties:
+        _id: { type: string }
+        apartmentId: { type: string }
+        userId: { type: string }
+        type: { type: string }
+        message: { type: string }
+        link: { type: string }
+        read: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    # ────────── Audit Log ──────────
+    AuditLog:
+      type: object
+      properties:
+        _id: { type: string }
+        userId: { type: string, description: 'User ID or populated { _id, name }' }
+        action: { type: string }
+        resource: { type: string }
+        resourceId: { type: string, nullable: true }
+        details: { type: object }
+        createdAt: { type: string, format: date-time }
+
+    # ────────── Dashboard ──────────
+    SiteAdminDashboard:
+      type: object
+      properties:
+        totalApartments: { type: integer }
+        activeApartments: { type: integer }
+        totalPlans: { type: integer }
+        totalUnits: { type: integer }
+        totalResidents: { type: integer }
+        monthlyRevenue: { type: number }
+        recentApartments: { type: array, items: { $ref: '#/components/schemas/Apartment' } }
+        recentInvoices: { type: array, items: { $ref: '#/components/schemas/SaaSInvoice' } }
+
+    ApartmentAdminDashboard:
+      type: object
+      properties:
+        totalUnits: { type: integer }
+        occupiedUnits: { type: integer }
+        vacantUnits: { type: integer }
+        totalResidents: { type: integer }
+        totalCommittees: { type: integer }
+        recentComplaints: { type: integer }
+        billingSummary: { type: object }
+
+    CommitteeDashboard:
+      type: object
+      properties:
+        totalMembers: { type: integer }
+        balance: { type: number }
+        totalIncome: { type: number }
+        totalExpenses: { type: number }
+        pendingComplaints: { type: integer }
+        recentBills: { type: array, items: { $ref: '#/components/schemas/MaintenanceBill' } }
+        recentLedger: { type: array, items: { $ref: '#/components/schemas/LedgerEntry' } }
+
+    ResidentDashboard:
+      type: object
+      properties:
+        unit: { $ref: '#/components/schemas/Unit' }
+        unpaidBills: { type: array, items: { $ref: '#/components/schemas/MaintenanceBill' } }
+        recentComplaints: { type: array, items: { $ref: '#/components/schemas/Complaint' } }
+        notices: { type: array, items: { $ref: '#/components/schemas/Notice' } }
+
+    # ────────── Payment ──────────
+    CreatePaymentIntentRequest:
+      type: object
+      required: [billId]
+      properties:
+        billId: { type: string }
+
+    PaymentIntent:
+      type: object
+      properties:
+        id: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        simulated: { type: boolean }
+        clientSecret: { type: string }
+
+    # ────────── Analytics ──────────
+    AnalyticsData:
+      type: object
+      properties:
+        revenue: { type: array, items: { type: object } }
+        occupancy: { type: object }
+        complaints: { type: object }
+        payments: { type: object }
+
+    # ────────── Health ──────────
+    HealthResponse:
+      type: object
+      properties:
+        status: { type: string, example: ok }
+        timestamp: { type: string, format: date-time }
+        uptime: { type: number }
+        memory: { type: object }
+        db: { type: string }
+        node: { type: string }
+        env: { type: string }
 
   parameters:
-    ApartmentId:
-      name: apartmentId
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    CommitteeIdParam:
+      name: committeeId
+      in: path
+      required: true
+      schema: { type: string }
+    MemberIdParam:
+      name: memberId
+      in: path
+      required: true
+      schema: { type: string }
+    RoleIdParam:
+      name: roleId
+      in: path
+      required: true
+      schema: { type: string }
+    BillIdParam:
+      name: billId
+      in: path
+      required: true
+      schema: { type: string }
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, default: 1 }
+    LimitParam:
+      name: limit
+      in: query
+      schema: { type: integer, default: 20 }
+    SearchParam:
+      name: search
       in: query
       schema: { type: string }
-      description: Auto-injected by tenant isolation middleware
 
 paths:
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   # AUTH
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   /auth/apartments:
     get:
       tags: [Auth]
@@ -432,23 +839,47 @@ paths:
         '403':
           description: Account inactive or apartment suspended
 
-  # ══════════════════════════════════════════════════
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change own password (authenticated)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200': { description: Password changed }
+        '401': { description: Current password incorrect }
+
+  # ════════════════════════════════════════════════════════════════
   # SITE ADMIN — Apartments
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   /admin/apartments:
     get:
       tags: [Site Admin]
-      summary: List all apartments (with plan details)
+      summary: List all apartments with plan details
       security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
       responses:
         '200':
-          description: Array of apartments
+          description: Paginated list of apartments
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Apartment'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Apartment'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
     post:
       tags: [Site Admin]
       summary: Create a new apartment
@@ -464,15 +895,26 @@ paths:
         '409': { description: Apartment name already exists }
 
   /admin/apartments/{id}:
-    put:
+    get:
       tags: [Site Admin]
-      summary: Update apartment (address, status, plan assignment)
+      summary: Get a single apartment with plan details
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Apartment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Apartment'
+        '404': { description: Apartment not found }
+    put:
+      tags: [Site Admin]
+      summary: Update apartment
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         content:
           application/json:
@@ -486,46 +928,34 @@ paths:
       summary: Delete an apartment
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200': { description: Apartment deleted }
 
-  /admin/apartment-admins:
-    post:
-      tags: [Site Admin]
-      summary: Create an Apartment Admin account for a given apartment
-      security: [{ BearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateApartmentAdminRequest'
-      responses:
-        '201': { description: Apartment admin created }
-        '400': { description: Type must be apartment_admin }
-        '404': { description: Apartment not found }
-        '409': { description: Identifier already exists in this apartment }
-
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   # SITE ADMIN — Plans
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   /admin/plans:
     get:
       tags: [Site Admin]
       summary: List all pricing plans
       security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Plan'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Plan'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
     post:
       tags: [Site Admin]
       summary: Create a pricing plan
@@ -545,10 +975,7 @@ paths:
       summary: Update a plan
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
@@ -563,38 +990,160 @@ paths:
       summary: Delete a plan
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200': { description: Plan deleted }
 
-  # ══════════════════════════════════════════════════
-  # SITE ADMIN — SaaS Invoices
-  # ══════════════════════════════════════════════════
-  /admin/invoices:
+  # ════════════════════════════════════════════════════════════════
+  # SITE ADMIN — Apartment Admins & Accounts
+  # ════════════════════════════════════════════════════════════════
+  /admin/apartment-admins:
+    post:
+      tags: [Site Admin]
+      summary: Create an Apartment Admin for a given apartment
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201': { description: Apartment admin created }
+        '400': { description: Type must be apartment_admin }
+        '404': { description: Apartment not found }
+        '409': { description: Identifier already exists }
+
+  /admin/accounts:
     get:
       tags: [Site Admin]
-      summary: List all SaaS invoices across all apartments
+      summary: List all accounts (non-site-admin users)
       security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SaaSInvoice'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      tags: [Site Admin]
+      summary: Create an account (apartment_admin or resident)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201': { description: Account created }
+        '400': { description: apartmentId required or invalid type }
+        '409': { description: Identifier already exists }
+
+  /admin/accounts/{id}:
+    put:
+      tags: [Site Admin]
+      summary: Update an account (type, status, apartment)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccountRequest'
+      responses:
+        '200': { description: Account updated }
+        '404': { description: Account not found }
+    delete:
+      tags: [Site Admin]
+      summary: Delete an account
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200': { description: Account deleted }
+        '404': { description: Account not found }
+
+  /admin/accounts/{id}/change-password:
+    put:
+      tags: [Site Admin]
+      summary: Admin change another user's password
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPassword]
+              properties:
+                newPassword: { type: string, minLength: 6 }
+      responses:
+        '200': { description: Password changed }
+        '404': { description: User not found }
+
+  # ════════════════════════════════════════════════════════════════
+  # SITE ADMIN — SaaS Invoices
+  # ════════════════════════════════════════════════════════════════
+  /admin/invoices:
+    get:
+      tags: [Site Admin]
+      summary: List all SaaS invoices across all apartments
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Search by apartment name
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SaaSInvoice'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
 
   /admin/invoices/generate:
-    get:
+    post:
       tags: [Site Admin]
       summary: Manually trigger monthly invoice generation
       security: [{ BearerAuth: [] }]
       responses:
         '200':
-          description: Generation results
+          description: Generation results with per-apartment status
+
+  /admin/invoices/export:
+    get:
+      tags: [Site Admin]
+      summary: Export all invoices as CSV
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: CSV file download
+          content:
+            text/csv: {}
 
   /admin/invoices/{id}/mark-paid:
     put:
@@ -602,10 +1151,7 @@ paths:
       summary: Mark an invoice as paid
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
@@ -616,39 +1162,31 @@ paths:
         '200': { description: Invoice updated }
         '404': { description: Invoice not found }
 
-  # ══════════════════════════════════════════════════
-  # APARTMENT ADMIN — Invoices (own apartment)
-  # ══════════════════════════════════════════════════
-  /apartment/invoices:
-    get:
-      tags: [Apartment Admin]
-      summary: List SaaS invoices for the authenticated admin's apartment
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SaaSInvoice'
-
-  # ══════════════════════════════════════════════════
-  # APARTMENT ADMIN — Units & Residents
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
+  # APARTMENT ADMIN — Units
+  # ════════════════════════════════════════════════════════════════
   /apartment/units:
     get:
       tags: [Apartment Admin]
-      summary: List all units in the apartment
+      summary: List units in the apartment
       security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Unit'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Unit'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
     post:
       tags: [Apartment Admin]
       summary: Create a unit
@@ -664,21 +1202,31 @@ paths:
         '409': { description: Unit number already exists }
 
   /apartment/units/{id}:
+    get:
+      tags: [Apartment Admin]
+      summary: Get a single unit
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Unit'
+        '404': { description: Unit not found }
     put:
       tags: [Apartment Admin]
       summary: Update a unit
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUnitRequest'
+              $ref: '#/components/schemas/UpdateUnitRequest'
       responses:
         '200': { description: Unit updated }
         '404': { description: Unit not found }
@@ -687,26 +1235,35 @@ paths:
       summary: Delete a unit
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200': { description: Unit deleted }
 
+  # ════════════════════════════════════════════════════════════════
+  # APARTMENT ADMIN — Residents
+  # ════════════════════════════════════════════════════════════════
   /apartment/residents:
     get:
       tags: [Apartment Admin]
       summary: List residents in the apartment
       security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Resident'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Resident'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
     post:
       tags: [Apartment Admin]
       summary: Create a resident account
@@ -716,7 +1273,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateResidentRequest'
+              $ref: '#/components/schemas/CreateUserRequest'
       responses:
         '201': { description: Resident created }
         '409': { description: Identifier already exists }
@@ -724,19 +1281,16 @@ paths:
   /apartment/residents/{id}:
     put:
       tags: [Apartment Admin]
-      summary: Update a resident (name, status, unit assignment)
+      summary: Update a resident
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateResidentRequest'
+              $ref: '#/components/schemas/UpdateUserRequest'
       responses:
         '200': { description: Resident updated }
         '404': { description: Resident not found }
@@ -745,21 +1299,17 @@ paths:
       summary: Delete a resident (frees unit)
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200': { description: Resident deleted }
 
-  # ══════════════════════════════════════════════════
-  # APARTMENT ADMIN — Committees
-  # ══════════════════════════════════════════════════
-  /apartment/committees:
+  /apartment/unit-owners:
     get:
       tags: [Apartment Admin]
-      summary: List committees in the apartment
+      summary: List unit owners
       security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/SearchParam'
       responses:
         '200':
           content:
@@ -767,7 +1317,33 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Committee'
+                  $ref: '#/components/schemas/User'
+
+  # ════════════════════════════════════════════════════════════════
+  # APARTMENT ADMIN — Committees
+  # ════════════════════════════════════════════════════════════════
+  /apartment/committees:
+    get:
+      tags: [Apartment Admin]
+      summary: List committees in the apartment
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Committee'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
     post:
       tags: [Apartment Admin]
       summary: Create a committee
@@ -785,21 +1361,15 @@ paths:
   /apartment/committees/{id}:
     put:
       tags: [Apartment Admin]
-      summary: Update committee name/status
+      summary: Update committee
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name: { type: string }
-                status: { type: string, enum: [active, inactive] }
+              $ref: '#/components/schemas/UpdateCommitteeRequest'
       responses:
         '200': { description: Committee updated }
         '404': { description: Committee not found }
@@ -808,10 +1378,7 @@ paths:
       summary: Delete a committee
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200': { description: Committee deleted }
 
@@ -821,10 +1388,7 @@ paths:
       summary: Create a Committee Head for a committee
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
@@ -835,102 +1399,211 @@ paths:
         '201': { description: Committee head created }
         '409': { description: Identifier already exists }
 
-  # ══════════════════════════════════════════════════
-  # COMMITTEE — General
-  # ══════════════════════════════════════════════════
-  /committees:
+  # ════════════════════════════════════════════════════════════════
+  # APARTMENT ADMIN — Invoices, Settings & Payment History
+  # ════════════════════════════════════════════════════════════════
+  /apartment/invoices:
     get:
-      tags: [Committee]
-      summary: List committees (apartment_admin sees all, committee sees own)
+      tags: [Apartment Admin]
+      summary: List SaaS invoices for own apartment
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SaaSInvoice'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+
+  /apartment/payment-history:
+    get:
+      tags: [Apartment Admin]
+      summary: Paid bills history
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: unitId
+          in: query
+          schema: { type: string }
+        - name: residentId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MaintenanceBill'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+
+  /apartment/settings:
+    get:
+      tags: [Apartment Admin]
+      summary: Get apartment settings
       security: [{ BearerAuth: [] }]
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Committee'
+                $ref: '#/components/schemas/Apartment'
+    put:
+      tags: [Apartment Admin]
+      summary: Update apartment settings
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateApartmentRequest'
+      responses:
+        '200': { description: Settings updated }
+
+  # ════════════════════════════════════════════════════════════════
+  # COMMITTEE — General & Members
+  # ════════════════════════════════════════════════════════════════
+  /committees:
+    get:
+      tags: [Committee]
+      summary: List committees (admin sees all, committee sees own)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Committee'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
 
   /committees/{id}:
     get:
       tags: [Committee]
-      summary: Get a single committee by ID
+      summary: Get a single committee
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       responses:
-        '200': { description: Committee details }
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Committee'
         '404': { description: Committee not found }
 
   /committees/{id}/members:
     get:
       tags: [Committee]
-      summary: List members of a committee (head + members)
+      summary: List committee members
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CommitteeMember'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommitteeMember'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
     post:
       tags: [Committee]
-      summary: Add a committee member
+      summary: Add a committee member (existing user or create new)
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateCommitteeMemberRequest'
+              $ref: '#/components/schemas/AddMemberRequest'
       responses:
         '201': { description: Member added }
-        '409': { description: Identifier already exists }
+        '409': { description: User already in a committee }
 
   /committees/{committeeId}/members/{memberId}:
+    put:
+      tags: [Committee]
+      summary: Update member role (committee_member/committee_head)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/CommitteeIdParam'
+        - $ref: '#/components/parameters/MemberIdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemberRoleRequest'
+      responses:
+        '200': { description: Role updated }
     delete:
       tags: [Committee]
       summary: Remove a committee member
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: committeeId
-          in: path
-          required: true
-          schema: { type: string }
-        - name: memberId
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/CommitteeIdParam'
+        - $ref: '#/components/parameters/MemberIdParam'
       responses:
         '200': { description: Member removed }
 
-  # ────────── Committee Ledger ──────────
-  /committees/{id}/ledger:
-    get:
+  /committees/{committeeId}/members/{memberId}/role:
+    put:
       tags: [Committee]
-      summary: List committee ledger entries
+      summary: Update member custom role label
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/CommitteeIdParam'
+        - $ref: '#/components/parameters/MemberIdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customRole: { type: string }
+      responses:
+        '200': { description: Custom role updated }
+        '404': { description: Member not found }
+
+  /committees/{id}/available-users:
+    get:
+      tags: [Committee]
+      summary: List users available to be added as members
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200':
           content:
@@ -938,16 +1611,80 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/LedgerEntry'
-    post:
+                  $ref: '#/components/schemas/User'
+
+  # ────────── Committee Roles ──────────
+  /committees/{id}/roles:
+    get:
       tags: [Committee]
-      summary: Add a ledger entry (committee_head only)
+      summary: List custom roles for a committee
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomRole'
+    post:
+      tags: [Committee]
+      summary: Create a custom role
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomRoleRequest'
+      responses:
+        '201': { description: Role created }
+        '409': { description: Role name already exists }
+
+  /committees/{id}/roles/{roleId}:
+    delete:
+      tags: [Committee]
+      summary: Delete a custom role
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/RoleIdParam'
+      responses:
+        '200': { description: Role deleted }
+
+  # ────────── Committee Ledger ──────────
+  /committees/{id}/ledger:
+    get:
+      tags: [Committee]
+      summary: List ledger entries
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LedgerEntry'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      tags: [Committee]
+      summary: Add a ledger entry
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
@@ -964,29 +1701,30 @@ paths:
       summary: List maintenance bills for a committee
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MaintenanceBill'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MaintenanceBill'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
 
   /committees/{id}/bills/generate:
     post:
       tags: [Committee]
-      summary: Generate bills for all occupied units in a committee
+      summary: Generate bills for occupied units
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
@@ -999,33 +1737,38 @@ paths:
   /committees/bills/{billId}/pay:
     put:
       tags: [Committee]
-      summary: Pay a bill (resident only, scoped to their unit)
+      summary: Pay a bill (resident, scoped to their unit)
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: billId
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/BillIdParam'
       responses:
-        '200': { description: Bill marked as paid }
-        '404': { description: Bill not found or already paid }
+        '200': { description: Bill marked paid }
+        '404': { description: Not found or already paid }
 
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   # COMPLAINTS
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   /complaints:
     get:
       tags: [Complaints]
       summary: List complaints (scoped by role)
       security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Complaint'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Complaint'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
     post:
       tags: [Complaints]
       summary: Raise a complaint (resident only)
@@ -1044,13 +1787,10 @@ paths:
   /complaints/{id}:
     put:
       tags: [Complaints]
-      summary: Update complaint status (committee head/member) or set rating
+      summary: Update complaint status, assignment, or rating
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
@@ -1064,43 +1804,56 @@ paths:
   /complaints/{id}/rate:
     put:
       tags: [Complaints]
-      summary: Rate a resolved complaint (resident who raised it only)
+      summary: Rate a resolved complaint (resident who raised it)
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RateComplaintRequest'
+              type: object
+              required: [rating]
+              properties:
+                rating: { type: integer, minimum: 1, maximum: 5 }
       responses:
         '200': { description: Rating submitted }
         '403': { description: Not the complaint owner }
-        '404': { description: Complaint not found or not resolved }
+        '404': { description: Not found or not resolved }
 
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   # VISITOR LOGS
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   /visitors:
     get:
       tags: [Visitor Logs]
       summary: List visitor logs (scoped by role)
       security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pre_approved, checked_in]
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/VisitorLog'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VisitorLog'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
     post:
       tags: [Visitor Logs]
-      summary: Log a visitor entry (committee member/head)
+      summary: Log a visitor entry
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
@@ -1117,33 +1870,38 @@ paths:
       summary: Check out a visitor
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200': { description: Visitor checked out }
-        '404': { description: Log not found or already checked out }
+        '404': { description: Not found or already checked out }
 
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   # NOTICES
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   /notices:
     get:
       tags: [Notices]
-      summary: List notices (scoped by role — committee sees relevant + apartment-wide)
+      summary: List notices (scoped by role)
       security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Notice'
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notice'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
     post:
       tags: [Notices]
-      summary: Post a notice (apartment_admin or committee_head)
+      summary: Post a notice
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
@@ -1153,75 +1911,511 @@ paths:
               $ref: '#/components/schemas/CreateNoticeRequest'
       responses:
         '201': { description: Notice created }
-        '403': { description: Residents/members cannot post notices }
+        '403': { description: Unauthorized role }
 
   /notices/{id}:
     delete:
       tags: [Notices]
-      summary: Delete own notice
+      summary: Delete a notice
       security: [{ BearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: '#/components/parameters/IdParam'
       responses:
         '200': { description: Notice deleted }
         '404': { description: Not found or unauthorized }
 
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   # DASHBOARDS
-  # ══════════════════════════════════════════════════
-  /dashboard/site-admin:
+  # ════════════════════════════════════════════════════════════════
+  /dashboard/{type}:
     get:
       tags: [Dashboards]
-      summary: Site admin overview (counts, revenue, recent records)
+      summary: Dashboard stats for a given role
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [site-admin, apartment-admin, committee-head, resident]
+      responses:
+        '200':
+          description: Dashboard data (shape differs by role)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SiteAdminDashboard'
+                  - $ref: '#/components/schemas/ApartmentAdminDashboard'
+                  - $ref: '#/components/schemas/CommitteeDashboard'
+                  - $ref: '#/components/schemas/ResidentDashboard'
+
+  # ════════════════════════════════════════════════════════════════
+  # USERS
+  # ════════════════════════════════════════════════════════════════
+  /users:
+    get:
+      tags: [Users]
+      summary: List users (admin only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+
+  /users/{id}:
+    put:
+      tags: [Users]
+      summary: Update a user
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200': { description: User updated }
+        '404': { description: User not found }
+
+  # ════════════════════════════════════════════════════════════════
+  # NOTIFICATIONS
+  # ════════════════════════════════════════════════════════════════
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications (paginated)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+
+  /notifications/{id}/read:
+    put:
+      tags: [Notifications]
+      summary: Mark a notification as read
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200': { description: Notification marked read }
+
+  /notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: All marked read }
+
+  # ════════════════════════════════════════════════════════════════
+  # UPLOADS
+  # ════════════════════════════════════════════════════════════════
+  /uploads:
+    get:
+      tags: [Uploads]
+      summary: List uploads (tenant-scoped)
       security: [{ BearerAuth: [] }]
       responses:
         '200':
-          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Upload'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      tags: [Uploads]
+      summary: Upload a file
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201': { description: File uploaded }
 
-  /dashboard/apartment-admin:
+  /uploads/{id}/download:
     get:
-      tags: [Dashboards]
-      summary: Apartment admin overview (units, residents, committees, finances)
+      tags: [Uploads]
+      summary: Download an uploaded file
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: File stream
+
+  /uploads/{id}:
+    delete:
+      tags: [Uploads]
+      summary: Delete an upload
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200': { description: Upload deleted }
+
+  # ════════════════════════════════════════════════════════════════
+  # EXPORT
+  # ════════════════════════════════════════════════════════════════
+  /export/{resource}:
+    get:
+      tags: [Export]
+      summary: Export data as CSV
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: resource
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: CSV file
+          content:
+            text/csv: {}
+
+  # ════════════════════════════════════════════════════════════════
+  # FACILITIES
+  # ════════════════════════════════════════════════════════════════
+  /facilities:
+    get:
+      tags: [Facilities]
+      summary: List facilities
       security: [{ BearerAuth: [] }]
       responses:
         '200':
-          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Facility'
+    post:
+      tags: [Facilities]
+      summary: Create a facility
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFacilityRequest'
+      responses:
+        '201': { description: Facility created }
 
-  /dashboard/committee-head:
+  /facilities/{id}:
+    put:
+      tags: [Facilities]
+      summary: Update a facility
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFacilityRequest'
+      responses:
+        '200': { description: Facility updated }
+        '404': { description: Facility not found }
+    delete:
+      tags: [Facilities]
+      summary: Delete a facility
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200': { description: Facility deleted }
+
+  /facilities/{id}/bookings:
     get:
-      tags: [Dashboards]
-      summary: Committee head (and member) overview
+      tags: [Facilities]
+      summary: List bookings for a facility
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FacilityBooking'
+
+  /facilities/{id}/book:
+    post:
+      tags: [Facilities]
+      summary: Book a facility
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+      responses:
+        '201': { description: Booking created }
+
+  /bookings/{id}:
+    delete:
+      tags: [Facilities]
+      summary: Cancel a booking
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200': { description: Booking cancelled }
+
+  # ════════════════════════════════════════════════════════════════
+  # DOCUMENTS
+  # ════════════════════════════════════════════════════════════════
+  /documents:
+    get:
+      tags: [Documents]
+      summary: List documents
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SearchParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Document'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      tags: [Documents]
+      summary: Upload a document
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                category: { type: string }
+                description: { type: string }
+      responses:
+        '201': { description: Document uploaded }
+
+  /documents/{id}:
+    delete:
+      tags: [Documents]
+      summary: Delete a document
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200': { description: Document deleted }
+
+  /documents/{id}/download:
+    get:
+      tags: [Documents]
+      summary: Download a document
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: File stream
+
+  # ════════════════════════════════════════════════════════════════
+  # SERVICE REQUESTS
+  # ════════════════════════════════════════════════════════════════
+  /service-requests:
+    get:
+      tags: [Service Requests]
+      summary: List service requests
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ServiceRequest'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+    post:
+      tags: [Service Requests]
+      summary: Create a service request
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequestRequest'
+      responses:
+        '201': { description: Service request created }
+
+  /service-requests/{id}:
+    put:
+      tags: [Service Requests]
+      summary: Update a service request
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateServiceRequestRequest'
+      responses:
+        '200': { description: Service request updated }
+        '404': { description: Not found }
+
+  # ════════════════════════════════════════════════════════════════
+  # PAYMENTS
+  # ════════════════════════════════════════════════════════════════
+  /payments:
+    get:
+      tags: [Payments]
+      summary: List payments for the user's unit
       security: [{ BearerAuth: [] }]
       responses:
         '200':
-          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MaintenanceBill'
 
-  /dashboard/resident:
+  /payments/create-intent:
+    post:
+      tags: [Payments]
+      summary: Create a payment intent (Stripe or simulated)
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentIntentRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+
+  # ════════════════════════════════════════════════════════════════
+  # AUDIT LOGS
+  # ════════════════════════════════════════════════════════════════
+  /audit-logs:
     get:
-      tags: [Dashboards]
-      summary: Resident dashboard (bills, complaints, notices for their unit)
+      tags: [Audit Logs]
+      summary: List audit logs (site admin only)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  pagination: { $ref: '#/components/schemas/Pagination' }
+
+  # ════════════════════════════════════════════════════════════════
+  # ANALYTICS
+  # ════════════════════════════════════════════════════════════════
+  /analytics:
+    get:
+      tags: [Analytics]
+      summary: Analytics data
       security: [{ BearerAuth: [] }]
       responses:
         '200':
-          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsData'
 
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   # HEALTH
-  # ══════════════════════════════════════════════════
+  # ════════════════════════════════════════════════════════════════
   /health:
     get:
       tags: [System]
       summary: Health check
       responses:
         '200':
-          description: Server is running
+          description: Server status
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status: { type: string, example: ok }
-                  timestamp: { type: string, format: date-time }
+                $ref: '#/components/schemas/HealthResponse'
