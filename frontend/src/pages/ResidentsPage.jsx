@@ -17,6 +17,8 @@ export default function ResidentsPage() {
   const [form, setForm] = useState({ name: '', identifier: '', password: '', unitId: '', residentType: 'tenant', phone: '', identityNumber: '' });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -117,12 +119,11 @@ export default function ResidentsPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identity</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {residents.map((r) => (
-              <tr key={r._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+              <tr key={r._id} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150" onClick={() => { setViewItem(r); setViewOpen(true); }}>
                 <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{r.name}</td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{r.identifier}</td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400"><span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 capitalize">{r.residentType || 'tenant'}</span></td>
@@ -131,10 +132,6 @@ export default function ResidentsPage() {
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{r.unitNumber || '-'}</td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                   <Badge status={r.status} />
-                </td>
-                <td className="px-6 py-4 text-sm text-right">
-                  <button onClick={() => openEdit(r)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors mr-3">Edit</button>
-                  <button onClick={() => { setConfirmId(r._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Remove</button>
                 </td>
               </tr>
             ))}
@@ -151,6 +148,48 @@ export default function ResidentsPage() {
       </div>
 
       <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} title="Delete Resident" message="Delete this resident?" confirmText="Delete" danger />
+
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Resident Details">
+        {viewItem && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{viewItem.name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identifier</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{viewItem.identifier}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</p>
+                <p className="text-sm text-gray-900 dark:text-white mt-1 capitalize">{viewItem.residentType || 'tenant'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</p>
+                <p className="mt-1"><Badge status={viewItem.status} /></p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</p>
+                <p className="text-sm text-gray-900 dark:text-white mt-1">{Array.isArray(viewItem.phone) ? viewItem.phone.join(', ') : viewItem.phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identity Number</p>
+                <p className="text-sm text-gray-900 dark:text-white mt-1">{viewItem.identityNumber || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit</p>
+                <p className="text-sm text-gray-900 dark:text-white mt-1">{viewItem.unitNumber || '-'}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <Button onClick={() => { setViewOpen(false); openEdit(viewItem); }}>Edit</Button>
+              <Button variant="danger" onClick={() => { setViewOpen(false); setConfirmId(viewItem._id); setConfirmOpen(true); }}>Remove</Button>
+              <Button variant="secondary" onClick={() => setViewOpen(false)} className="ml-auto">Close</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title={editItem ? 'Edit Resident' : 'Add Resident'}>
         <form onSubmit={handleSubmit} className="space-y-4">

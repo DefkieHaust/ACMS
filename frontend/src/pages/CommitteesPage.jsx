@@ -138,18 +138,10 @@ export default function CommitteesPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {committees.map((c) => (
-          <div key={c._id} className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm p-6 hover:shadow-md transition-all duration-200">
+          <div key={c._id} className="cursor-pointer rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm p-6 hover:shadow-md transition-all duration-200" onClick={() => { setViewItem(c); setViewOpen(true); }}>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{c.name}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Head: {c.headUserId?.name || 'Not assigned'}</p>
             {c.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{c.description}</p>}
-            <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-              <button onClick={() => { setViewItem(c); setViewOpen(true); }} className="text-sm font-medium text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">View</button>
-              <button onClick={() => openEdit(c)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Edit</button>
-              <button onClick={() => { setConfirmId(c._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Delete</button>
-              {!c.headUserId && (
-                <button onClick={() => openHeadModal(c)} className="text-sm font-medium text-green-600 hover:text-green-700 dark:text-green-400 transition-colors">Set Head</button>
-              )}
-            </div>
           </div>
         ))}
         {committees.length === 0 && (
@@ -228,8 +220,13 @@ export default function CommitteesPage() {
                 </div>
               ))}
             </div>
-            <div className="flex justify-end pt-2">
-              <Button type="button" variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <Button onClick={() => { setViewOpen(false); openEdit(viewItem); }}>Edit</Button>
+              {!viewItem.headUserId && (
+                <Button variant="secondary" onClick={() => { setViewOpen(false); openHeadModal(viewItem); }}>Set Head</Button>
+              )}
+              <Button variant="danger" onClick={() => { setViewOpen(false); setConfirmId(viewItem._id); setConfirmOpen(true); }}>Delete</Button>
+              <Button variant="secondary" onClick={() => setViewOpen(false)} className="ml-auto">Close</Button>
             </div>
           </div>
         )}

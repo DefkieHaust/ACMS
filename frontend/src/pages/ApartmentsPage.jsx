@@ -174,13 +174,12 @@ export default function ApartmentsPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {apartments.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center">
+                <td colSpan={7} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <svg className="w-12 h-12 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                     <p className="text-sm text-gray-500 dark:text-gray-400">No apartments yet</p>
@@ -189,7 +188,7 @@ export default function ApartmentsPage() {
               </tr>
             ) : (
               apartments.map((a) => (
-                <tr key={a._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+                <tr key={a._id} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150" onClick={() => openView(a)}>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{a.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{a.address}</td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{a.city || '-'}</td>
@@ -197,15 +196,7 @@ export default function ApartmentsPage() {
                   <td className="px-6 py-4 text-sm"><span className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">{a.apartmentType || 'residential'}</span></td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{a.planId?.name || '-'}</td>
                   <td className="px-6 py-4 text-sm">
-                    <button onClick={() => toggleStatus(a)} className={`px-2.5 py-1 text-xs font-medium rounded-full ${a.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>{a.status}</button>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-right">
-                    <div className="flex flex-col gap-1 items-end">
-                      <button onClick={() => openView(a)} className="text-sm font-medium text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">View</button>
-                      <button onClick={() => openEdit(a)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Edit</button>
-                      <button onClick={() => { setConfirmId(a._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Delete</button>
-                      <button onClick={() => { setSelectedApt(a); setAdminForm({ name: '', identifier: '', password: '' }); setAdminOpen(true); }} className="text-sm font-medium text-green-600 hover:text-green-700 dark:text-green-400 transition-colors">Create Admin</button>
-                    </div>
+                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${a.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>{a.status}</span>
                   </td>
                 </tr>
               ))
@@ -304,8 +295,12 @@ export default function ApartmentsPage() {
                 </div>
               ))}
             </div>
-            <div className="flex justify-end pt-2">
-              <Button type="button" variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <Button onClick={() => { setViewOpen(false); openEdit(viewItem); }}>Edit</Button>
+              <Button variant="secondary" onClick={() => toggleStatus(viewItem)}>{viewItem.status === 'active' ? 'Suspend' : 'Activate'}</Button>
+              <Button variant="secondary" onClick={() => { setViewOpen(false); setSelectedApt(viewItem); setAdminForm({ name: '', identifier: '', password: '' }); setAdminOpen(true); }}>Create Admin</Button>
+              <Button variant="danger" onClick={() => { setViewOpen(false); setConfirmId(viewItem._id); setConfirmOpen(true); }}>Delete</Button>
+              <Button variant="secondary" onClick={() => setViewOpen(false)} className="ml-auto">Close</Button>
             </div>
           </div>
         )}

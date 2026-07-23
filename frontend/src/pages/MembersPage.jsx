@@ -25,6 +25,8 @@ export default function MembersPage() {
   const [editForm, setEditForm] = useState({ role: 'committee_member', customRole: '' });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
   const [customRoles, setCustomRoles] = useState([]);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
@@ -190,12 +192,11 @@ export default function MembersPage() {
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identifier</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
               <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Custom Role</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {members.map((m) => (
-              <tr key={m._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+              <tr key={m._id} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150" onClick={() => { setViewItem(m); setViewOpen(true); }}>
                 <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{m.userId?.name || m.name}</td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{m.userId?.identifier || m.identifier}</td>
                 <td className="px-6 py-4">
@@ -204,12 +205,6 @@ export default function MembersPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{m.customRole || m.userId?.customRole || '-'}</td>
-                <td className="px-6 py-4 text-right space-x-2">
-                  <button onClick={() => openEditRole(m)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Change Role</button>
-                  {m.role !== 'committee_head' && (
-                    <button onClick={() => { setConfirmId(m._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Remove</button>
-                  )}
-                </td>
               </tr>
             ))}
           </tbody>
@@ -223,6 +218,38 @@ export default function MembersPage() {
       </div>
 
       <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={removeMember} title="Remove Member" message="Remove this member?" confirmText="Remove" danger />
+
+      <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Member Details">
+        {viewItem && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{viewItem.userId?.name || viewItem.name}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identifier</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{viewItem.userId?.identifier || viewItem.identifier}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</p>
+                <p className="text-sm text-gray-900 dark:text-white mt-1 capitalize">{viewItem.role === 'committee_head' ? 'Head' : ROLE_LABELS[viewItem.role] || 'Member'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Custom Role</p>
+                <p className="text-sm text-gray-900 dark:text-white mt-1">{viewItem.customRole || viewItem.userId?.customRole || '-'}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <Button onClick={() => { setViewOpen(false); openEditRole(viewItem); }}>Change Role</Button>
+              {viewItem.role !== 'committee_head' && (
+                <Button variant="danger" onClick={() => { setViewOpen(false); setConfirmId(viewItem._id); setConfirmOpen(true); }}>Remove</Button>
+              )}
+              <Button variant="secondary" onClick={() => setViewOpen(false)} className="ml-auto">Close</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Committee Member">
         <form onSubmit={handleAdd} className="space-y-4">

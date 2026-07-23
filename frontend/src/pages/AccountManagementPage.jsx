@@ -195,19 +195,18 @@ export default function AccountManagementPage() {
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identifier</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Apartment</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-              </tr>
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identifier</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Apartment</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+            </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {showType.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={5} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <svg className="w-12 h-12 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                       <p className="text-sm text-gray-500 dark:text-gray-400">No accounts found</p>
@@ -216,7 +215,7 @@ export default function AccountManagementPage() {
                 </tr>
               ) : (
                 showType.map((a) => (
-                  <tr key={a._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+                  <tr key={a._id} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150" onClick={() => { setViewItem(a); setViewOpen(true); }}>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{a.name}</td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{a.identifier}</td>
                     <td className="px-6 py-4 text-sm">
@@ -224,15 +223,7 @@ export default function AccountManagementPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{a.apartmentId?.name || '-'}</td>
                     <td className="px-6 py-4 text-sm">
-                      <button onClick={() => toggleStatus(a)} className={`px-2.5 py-1 text-xs font-medium rounded-full ${a.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>{a.status}</button>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-right">
-                      <div className="flex flex-col gap-1 items-end">
-                        <button onClick={() => { setViewItem(a); setViewOpen(true); }} className="text-sm font-medium text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">View</button>
-                        <button onClick={() => openEdit(a)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Edit</button>
-                        <button onClick={() => openChangePassword(a)} className="text-sm font-medium text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 transition-colors">Password</button>
-                        <button onClick={() => { setConfirmId(a._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Delete</button>
-                      </div>
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${a.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>{a.status}</span>
                     </td>
                   </tr>
                 ))
@@ -348,8 +339,12 @@ export default function AccountManagementPage() {
                 </div>
               ))}
             </div>
-            <div className="flex justify-end pt-2">
-              <Button type="button" variant="secondary" onClick={() => setViewOpen(false)}>Close</Button>
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <Button onClick={() => { setViewOpen(false); openEdit(viewItem); }}>Edit</Button>
+              <Button variant="secondary" onClick={() => { setViewOpen(false); openChangePassword(viewItem); }}>Password</Button>
+              <Button variant="secondary" onClick={() => toggleStatus(viewItem)}>{viewItem.status === 'active' ? 'Deactivate' : 'Activate'}</Button>
+              <Button variant="danger" onClick={() => { setViewOpen(false); setConfirmId(viewItem._id); setConfirmOpen(true); }}>Delete</Button>
+              <Button variant="secondary" onClick={() => setViewOpen(false)} className="ml-auto">Close</Button>
             </div>
           </div>
         )}
