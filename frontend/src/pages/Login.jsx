@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
 import toast from 'react-hot-toast';
@@ -12,6 +13,7 @@ const COMMITTEE_ROLES = [
 ];
 
 export default function Login() {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
   const [apartments, setApartments] = useState([]);
@@ -66,18 +68,18 @@ export default function Login() {
           </p>
           <div className="mt-12 flex justify-center gap-8">
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">1</p>
-              <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">Apartment</p>
+              <p className="text-2xl font-bold text-white">{apartments.length}</p>
+              <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">{t('analytics.apartments')}</p>
             </div>
             <div className="w-px bg-gray-700" />
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">2</p>
-              <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">Units</p>
+              <p className="text-2xl font-bold text-white">—</p>
+              <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">{t('dashboard.units')}</p>
             </div>
             <div className="w-px bg-gray-700" />
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">3</p>
-              <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">Committees</p>
+              <p className="text-2xl font-bold text-white">—</p>
+              <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">{t('dashboard.committees')}</p>
             </div>
           </div>
         </div>
@@ -89,8 +91,8 @@ export default function Login() {
             <span className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300 mb-4 lg:hidden">
               <span className="text-xl font-display font-bold">A</span>
             </span>
-            <h1 className="text-2xl font-display text-gray-900 dark:text-white">Welcome back</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Sign in to your account</p>
+            <h1 className="text-2xl font-display text-gray-900 dark:text-white">{t('auth.loginTitle')}</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">{t('auth.selectApartment')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -111,7 +113,7 @@ export default function Login() {
             )}
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Apartment</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('account.apartment')}</label>
               <select value={form.apartmentId} onChange={(e) => setForm({ ...form, apartmentId: e.target.value })} className="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                 {apartments.length === 0 && <option value="">No apartments available</option>}
                 {apartments.map((a) => <option key={a._id} value={a._id}>{a.name}</option>)}
@@ -124,7 +126,7 @@ export default function Login() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth.password')}</label>
               <input type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
             </div>
 
@@ -136,15 +138,15 @@ export default function Login() {
               {loading ? (
                 <span className="inline-flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-                  Signing in...
+                  {t('auth.loggingIn')}
                 </span>
-              ) : 'Sign In'}
+              ) : t('auth.loginButton')}
             </button>
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 text-center">
             <Link to="/admin/login" className="text-sm text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-              Site Administrator? <span className="font-medium text-primary-600 dark:text-primary-400">Sign in here</span>
+              Site Administrator? <span className="font-medium text-primary-600 dark:text-primary-400">{t('nav.login')}</span>
             </Link>
           </div>
         </div>

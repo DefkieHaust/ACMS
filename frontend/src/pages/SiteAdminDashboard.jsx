@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/client';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 
 export default function SiteAdminDashboard() {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -21,18 +23,18 @@ export default function SiteAdminDashboard() {
   );
 
   const stats = [
-    { label: 'Total Apartments', value: data.totalApartments, sub: `${data.activeApartments} active`, gradient: 'from-primary-500 to-primary-600' },
-    { label: 'Plans', value: data.totalPlans, sub: null, gradient: 'from-accent-500 to-accent-600' },
-    { label: 'Total Revenue', value: `$${data.totalRevenue.toLocaleString()}`, sub: `$${data.outstandingRevenue.toLocaleString()} outstanding`, gradient: 'from-emerald-500 to-emerald-600' },
-    { label: 'Invoices', value: data.totalInvoices, sub: `${data.unpaidInvoices} unpaid`, gradient: 'from-violet-500 to-violet-600' },
+    { label: t('dashboard.totalApartments'), value: data.totalApartments, sub: `${data.activeApartments} ${t('dashboard.activeApartments')}`, gradient: 'from-primary-500 to-primary-600' },
+    { label: t('dashboard.plans'), value: data.totalPlans, sub: null, gradient: 'from-accent-500 to-accent-600' },
+    { label: t('dashboard.totalRevenue'), value: `$${data.totalRevenue.toLocaleString()}`, sub: `$${data.outstandingRevenue.toLocaleString()} ${t('dashboard.outstanding')}`, gradient: 'from-emerald-500 to-emerald-600' },
+    { label: t('dashboard.invoices'), value: data.totalInvoices, sub: `${data.unpaidInvoices} ${t('dashboard.unpaid')}`, gradient: 'from-violet-500 to-violet-600' },
   ];
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Platform overview at a glance</p>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">{t('nav.dashboard')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('dashboard.siteAdmin')}</p>
         </div>
       </div>
 
@@ -51,7 +53,7 @@ export default function SiteAdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Apartments</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.recentApartments')}</h2>
           <div className="space-y-2">
             {data.recentApartments.map((a) => (
               <div key={a._id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150">
@@ -64,13 +66,13 @@ export default function SiteAdminDashboard() {
             ))}
           </div>
           <Link to="/admin/apartments" className="inline-flex items-center gap-1 mt-4 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">
-            View all apartments
+            {t('dashboard.viewAll')}
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </Link>
         </Card>
 
         <Card>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Invoices</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.recentInvoices')}</h2>
           <div className="space-y-2">
             {data.recentInvoices.map((inv) => (
               <div key={inv._id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150">
@@ -83,7 +85,7 @@ export default function SiteAdminDashboard() {
             ))}
           </div>
           <Link to="/admin/invoices" className="inline-flex items-center gap-1 mt-4 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">
-            View all invoices
+            {t('dashboard.viewAll')}
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
           </Link>
         </Card>

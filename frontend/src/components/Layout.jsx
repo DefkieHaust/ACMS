@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { NAV_ITEMS, ROLE_LABELS } from '../utils/constants';
+import { NAV_ITEMS } from '../utils/constants';
 import NotificationBell from './NotificationBell';
+import LanguageSwitcher from './LanguageSwitcher';
 
 function ThemeToggle() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
@@ -46,6 +47,7 @@ function ThemeToggle() {
 }
 
 function Sidebar({ navItems, pathname, onNavigate }) {
+  const { t } = useTranslation();
   return (
     <nav className="mt-6 px-3 space-y-1">
       {navItems.map((item) => {
@@ -64,7 +66,7 @@ function Sidebar({ navItems, pathname, onNavigate }) {
             <span className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
               active ? 'bg-white' : 'bg-gray-600 group-hover:bg-gray-400'
             }`} />
-            {item.label}
+            {t('nav.' + item.navKey)}
           </Link>
         );
       })}
@@ -76,6 +78,7 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = NAV_ITEMS[user?.type] || [];
@@ -104,9 +107,10 @@ export default function Layout({ children }) {
             </Link>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <NotificationBell />
             <ThemeToggle />
+            <LanguageSwitcher />
             <span className="hidden md:flex items-center gap-2.5 pl-3 border-l border-gray-200 dark:border-gray-700">
               <span className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -114,14 +118,14 @@ export default function Layout({ children }) {
               <span className="text-sm">
                 <span className="font-medium text-gray-700 dark:text-gray-200">{user?.name}</span>
                 <span className="ml-2 px-2 py-0.5 rounded-md bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-xs font-medium">
-                  {ROLE_LABELS[user?.type]}
+                  {t('role.' + user?.type)}
                 </span>
               </span>
             </span>
             <button
               onClick={handleLogout}
               className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
-              title="Logout"
+              title={t('nav.logout')}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />

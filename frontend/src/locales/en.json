@@ -3,6 +3,13 @@
     "name": "ACMS",
     "tagline": "Apartment Committee Management System"
   },
+  "role": {
+    "site_admin": "Site Admin",
+    "apartment_admin": "Apartment Admin",
+    "committee_head": "Committee Head",
+    "committee_member": "Committee Member",
+    "resident": "Resident"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "analytics": "Analytics",
@@ -93,7 +100,8 @@
     "contactAdmin": "Contact your apartment admin",
     "totalDue": "Total Due",
     "recentBills": "Recent Bills",
-    "recentNotices": "Recent Notices"
+    "recentNotices": "Recent Notices",
+    "collected": "Collected"
   },
   "analytics": {
     "title": "Analytics Dashboard",
