@@ -8,8 +8,31 @@ jobs:
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: DefkieHaust
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Extract tag name
+        id: tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/defkiehaust/acms:${{ steps.tag.outputs.tag }}
+            ghcr.io/defkiehaust/acms:latest
 
       - name: Parse SSH_HOST into user and host
         id: parse
