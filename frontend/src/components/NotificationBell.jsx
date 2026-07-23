@@ -34,13 +34,9 @@ export default function NotificationBell() {
 
   useWebSocket(handleIncomingNotification);
 
-  useEffect(() => {
-    fetchCount();
-  }, []);
+  useEffect(() => { fetchCount(); }, []);
 
-  useEffect(() => {
-    if (open) fetchRecent();
-  }, [open]);
+  useEffect(() => { if (open) fetchRecent(); }, [open]);
 
   useEffect(() => {
     function handleClick(e) {
@@ -58,52 +54,58 @@ export default function NotificationBell() {
     } catch {}
   };
 
-  const handleViewAll = () => {
-    setOpen(false);
-    navigate('/notifications');
-  };
+  const handleViewAll = () => { setOpen(false); navigate('/notifications'); };
 
   return (
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+        className="relative p-2 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 transition-all duration-200"
         aria-label={`Notifications${count > 0 ? ` (${count} unread)` : ''}`}
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
         </svg>
         {count > 0 && (
-          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-red-500 rounded-full shadow-sm animate-scale-in">
             {count > 9 ? '9+' : count}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-            <button onClick={handleViewAll} className="text-xs text-primary-600 hover:text-primary-800 font-medium">View all</button>
+        <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-scale-in">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Notifications</h3>
+            <button onClick={handleViewAll} className="text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">View all</button>
           </div>
-          <div className="max-h-72 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto">
             {loading ? (
-              <div className="p-4 text-center text-sm text-gray-500">Loading...</div>
+              <div className="p-6 space-y-3">
+                {[1,2,3].map(i => <div key={i} className="h-12 skeleton-shimmer rounded-xl" />)}
+              </div>
             ) : notifications.length === 0 ? (
-              <div className="p-4 text-center text-sm text-gray-500">No new notifications</div>
+              <div className="p-8 text-center">
+                <svg className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0" /></svg>
+                <p className="text-sm text-gray-500 dark:text-gray-400">No new notifications</p>
+              </div>
             ) : (
               notifications.map((n) => (
-                <div key={n._id} className="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm text-gray-900 flex-1">{n.message}</p>
-                    <button
-                      onClick={() => handleMarkRead(n._id)}
-                      className="text-xs text-primary-600 hover:text-primary-800 shrink-0 mt-0.5"
-                    >
-                      Mark read
-                    </button>
+                <div key={n._id} className="px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b border-gray-50 dark:border-gray-800/50 last:border-0 transition-colors duration-150">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900 dark:text-gray-100">{n.message}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                    </div>
+                    {!n.read && (
+                      <button
+                        onClick={() => handleMarkRead(n._id)}
+                        className="shrink-0 text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors"
+                      >
+                        Mark read
+                      </button>
+                    )}
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
                 </div>
               ))
             )}

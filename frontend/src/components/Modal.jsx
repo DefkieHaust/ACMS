@@ -36,17 +36,17 @@ export default function Modal({ open, onClose, title, children }) {
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${open ? 'animate-fade-in' : 'opacity-0'}`}>
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div
         ref={contentRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto p-8"
+        className={`relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto p-8 border border-gray-100 dark:border-gray-800 ${open ? 'animate-scale-in' : ''}`}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 id="modal-title" className="text-xl font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-lg p-1 hover:bg-gray-100 transition-colors" aria-label="Close modal">
+        <div className="flex items-center justify-between mb-6">
+          <h2 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-xl p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Close modal">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
