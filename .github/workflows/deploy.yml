@@ -11,10 +11,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Parse SSH_HOST into user and host
+        id: parse
+        run: |
+          echo "host=$(echo '${{ secrets.SSH_HOST }}' | cut -d@ -f2)" >> "$GITHUB_OUTPUT"
+          echo "user=$(echo '${{ secrets.SSH_HOST }}' | cut -d@ -f1)" >> "$GITHUB_OUTPUT"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: ${{ steps.parse.outputs.host }}
+          username: ${{ steps.parse.outputs.user }}
           key: ${{ secrets.SSH_KEY }}
           envs: JWT_SECRET,CORS_ORIGINS,SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,STRIPE_SECRET_KEY
           script: |
