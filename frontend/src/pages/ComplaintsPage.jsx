@@ -3,7 +3,6 @@ import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
-import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
@@ -92,49 +91,57 @@ export default function ComplaintsPage() {
     }
   };
 
-  if (loading) return <LoadingSkeleton lines={8} />;
+  if (loading) return (
+    <div className="space-y-6">
+      <div className="h-8 w-40 skeleton-shimmer rounded-lg" />
+      <div className="h-64 skeleton-shimmer rounded-2xl" />
+    </div>
+  );
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Complaints</h1>
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">Complaints</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage and track complaints</p>
+        </div>
         {isResident && (
           <Button onClick={() => setModalOpen(true)}>+ Raise Complaint</Button>
         )}
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
-          <p className="text-sm text-red-700">{error}</p>
-          <button onClick={fetchComplaints} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center justify-between">
+          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+          <button onClick={fetchComplaints} className="text-sm font-medium text-red-700 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 underline">Retry</button>
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Title</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Description</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Unit</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Committee</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Rating</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Committee</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rating</th>
+              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {complaints.map((c) => (
-              <tr key={c._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-gray-600">{new Date(c.createdAt).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-gray-900 font-medium max-w-xs truncate">{c.title || '-'}</td>
-                <td className="px-6 py-4 text-gray-600 max-w-xs truncate">{c.description}</td>
-                <td className="px-6 py-4 text-gray-600">{c.raisedByUnitId?.unitNumber}</td>
-                <td className="px-6 py-4 text-gray-600">{c.committeeId?.name}</td>
+              <tr key={c._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white max-w-xs truncate">{c.title || '-'}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">{c.description}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{c.raisedByUnitId?.unitNumber}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{c.committeeId?.name}</td>
                 <td className="px-6 py-4">
                   {isCommittee ? (
-                    <select value={c.status} onChange={(e) => updateStatus(c._id, e.target.value)} className="text-xs border border-gray-300 rounded-lg px-2 py-1">
+                    <select value={c.status} onChange={(e) => updateStatus(c._id, e.target.value)} className="text-xs border border-gray-300 dark:border-gray-600 rounded-xl px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
                       <option value="open">Open</option>
                       <option value="in_progress">In Progress</option>
                       <option value="resolved">Resolved</option>
@@ -143,54 +150,59 @@ export default function ComplaintsPage() {
                     <Badge status={c.status} />
                   )}
                 </td>
-                <td className="px-6 py-4 text-gray-600">{c.rating ? '★'.repeat(c.rating) : '-'}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{c.rating ? '★'.repeat(c.rating) : '-'}</td>
                 <td className="px-6 py-4 text-right">
                   {isResident && c.status === 'resolved' && !c.rating && (
-                    <button onClick={() => openRateModal(c._id)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Rate</button>
+                    <button onClick={() => openRateModal(c._id)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Rate</button>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {complaints.length === 0 && <p className="text-center text-gray-500 py-8">No complaints found</p>}
+        {complaints.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <svg className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No complaints found</p>
+          </div>
+        )}
       </div>
 
       <Modal open={rateModalOpen} onClose={() => setRateModalOpen(false)} title="Rate Complaint Resolution">
         <div className="text-center">
-          <p className="text-gray-600 mb-6">How satisfied are you with the resolution?</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">How satisfied are you with the resolution?</p>
           <div className="flex justify-center gap-2">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 key={star}
                 onClick={() => submitRating(star)}
-                className="w-12 h-12 rounded-lg bg-gray-100 hover:bg-yellow-100 hover:text-yellow-600 text-2xl transition-colors flex items-center justify-center"
+                className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 hover:text-yellow-600 dark:hover:text-yellow-400 text-2xl transition-colors flex items-center justify-center"
                 title={`${star} star${star > 1 ? 's' : ''}`}
               >
                 ★
               </button>
             ))}
           </div>
-          <button onClick={() => setRateModalOpen(false)} className="mt-6 text-sm text-gray-500 hover:text-gray-700 font-medium">Cancel</button>
+          <button onClick={() => setRateModalOpen(false)} className="mt-6 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Cancel</button>
         </div>
       </Modal>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Raise a Complaint">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Committee</label>
-            <select required value={form.committeeId} onChange={(e) => setForm({ ...form, committeeId: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Committee</label>
+            <select required value={form.committeeId} onChange={(e) => setForm({ ...form, committeeId: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
               <option value="">Select committee</option>
               {committees.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-            <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Brief title for your complaint" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Title</label>
+            <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Brief title for your complaint" className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea required rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+            <textarea required rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div className="flex gap-3 pt-2">
             <Button type="submit" className="flex-1">Submit</Button>

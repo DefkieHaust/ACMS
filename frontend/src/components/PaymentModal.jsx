@@ -37,12 +37,12 @@ export default function PaymentModal({ open, onClose, amount, currency = 'USD', 
   return (
     <Modal open={open} onClose={onClose} title="Payment">
       <div className="space-y-4">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-sm text-gray-600">Amount to pay:</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{currency === 'USD' ? '$' : currency}{amount?.toFixed(2)}</p>
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Amount to pay:</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{currency === 'USD' ? '$' : currency}{amount?.toFixed(2)}</p>
         </div>
-        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-          <p className="text-sm text-primary-700">Demo payment mode — no real charges will be made.</p>
+        <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-4">
+          <p className="text-sm text-primary-700 dark:text-primary-300">Demo payment mode — no real charges will be made.</p>
         </div>
         <div className="flex gap-3 pt-2">
           <Button onClick={handlePay} disabled={loading} className="flex-1">
