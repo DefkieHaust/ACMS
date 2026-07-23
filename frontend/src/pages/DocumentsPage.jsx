@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/constants';
-import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 import Button from '../components/Button';
 
@@ -74,14 +73,28 @@ export default function DocumentsPage() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  if (loading) return <LoadingSkeleton lines={8} />;
+  if (loading) return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-8 w-48 skeleton-shimmer rounded bg-gray-200 dark:bg-gray-700" />
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="p-6 space-y-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-6 skeleton-shimmer rounded bg-gray-200 dark:bg-gray-700" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">Documents</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage apartment documents and files</p>
+        </div>
         <div className="flex gap-2">
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          <select value={category} onChange={(e) => setCategory(e.target.value)} className="px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
             <option value="">All categories</option>
             <option value="general">General</option>
             <option value="bylaws">Bylaws</option>
@@ -96,50 +109,60 @@ export default function DocumentsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
-          <p className="text-sm text-red-700">{error}</p>
-          <button onClick={fetchDocuments} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center justify-between">
+          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+          <button onClick={fetchDocuments} className="text-sm font-medium text-red-700 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 underline">Retry</button>
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Category</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Size</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Uploaded By</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Size</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Uploaded By</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {documents.map((d) => (
-              <tr key={d._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-sm font-medium text-gray-900">{d.originalName}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4"><span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">{d.category}</span></td>
-                <td className="px-6 py-4 text-sm text-gray-600">{formatSize(d.size)}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{d.uploadedBy?.name || '-'}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{new Date(d.createdAt).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex gap-2 justify-end">
-                    <button onClick={() => handleDownload(d._id, d.originalName)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Download</button>
-                    {isAdmin && <button onClick={() => handleDelete(d._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>}
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            {documents.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <svg className="w-12 h-12 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No documents uploaded yet</p>
                   </div>
                 </td>
               </tr>
-            ))}
+            ) : (
+              documents.map((d) => (
+                <tr key={d._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{d.originalName}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm"><span className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{d.category}</span></td>
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{formatSize(d.size)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{d.uploadedBy?.name || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{new Date(d.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-sm text-right">
+                    <div className="flex gap-2 justify-end">
+                      <button onClick={() => handleDownload(d._id, d.originalName)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Download</button>
+                      {isAdmin && <button onClick={() => handleDelete(d._id)} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Delete</button>}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-        {documents.length === 0 && <p className="text-center text-gray-500 py-8">No documents uploaded yet</p>}
       </div>
     </div>
   );

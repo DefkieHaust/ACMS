@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
-import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 import { RESIDENT_TYPES } from '../utils/constants';
 import Button from '../components/Button';
@@ -80,57 +79,75 @@ export default function ResidentsPage() {
     }
   };
 
-  if (loading) return <LoadingSkeleton lines={8} />;
+  if (loading) return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="space-y-2">
+        <div className="h-8 w-64 skeleton-shimmer rounded-lg" />
+        <div className="h-4 w-48 skeleton-shimmer rounded-lg" />
+      </div>
+      <div className="h-64 skeleton-shimmer rounded-2xl" />
+    </div>
+  );
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Residents</h1>
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">Residents</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage apartment residents and their units</p>
+        </div>
         <Button onClick={openCreate}>+ Add Resident</Button>
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
-          <p className="text-sm text-red-700">{error}</p>
-          <button onClick={() => window.location.reload()} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center justify-between">
+          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm font-medium text-red-700 dark:text-red-400 hover:text-red-900 underline">Retry</button>
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Identifier</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Type</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Phone</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Identity</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Unit</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identifier</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Identity</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {residents.map((r) => (
-              <tr key={r._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium text-gray-900">{r.name}</td>
-                <td className="px-6 py-4 text-gray-600">{r.identifier}</td>
-                <td className="px-6 py-4"><span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 capitalize">{r.residentType || 'tenant'}</span></td>
-                <td className="px-6 py-4 text-gray-600">{Array.isArray(r.phone) ? r.phone.join(', ') : r.phone || '-'}</td>
-                <td className="px-6 py-4 text-gray-600">{r.identityNumber || '-'}</td>
-                <td className="px-6 py-4 text-gray-600">{r.unitNumber || '-'}</td>
-                <td className="px-6 py-4">
+              <tr key={r._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{r.name}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{r.identifier}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400"><span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 capitalize">{r.residentType || 'tenant'}</span></td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{Array.isArray(r.phone) ? r.phone.join(', ') : r.phone || '-'}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{r.identityNumber || '-'}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{r.unitNumber || '-'}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                   <Badge status={r.status} />
                 </td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => openEdit(r)} className="text-sm text-primary-600 hover:text-primary-800 font-medium mr-3">Edit</button>
-                  <button onClick={() => { setConfirmId(r._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Remove</button>
+                <td className="px-6 py-4 text-sm text-right">
+                  <button onClick={() => openEdit(r)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors mr-3">Edit</button>
+                  <button onClick={() => { setConfirmId(r._id); setConfirmOpen(true); }} className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 transition-colors">Remove</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {residents.length === 0 && <p className="text-center text-gray-500 py-8">No residents yet</p>}
+        {residents.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <svg className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No data found</p>
+          </div>
+        )}
       </div>
 
       <ConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} title="Delete Resident" message="Delete this resident?" confirmText="Delete" danger />
@@ -138,34 +155,34 @@ export default function ResidentsPage() {
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title={editItem ? 'Edit Resident' : 'Add Resident'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Full Name</label>
+            <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Login ID (unit/apartment number)</label>
-            <input type="text" required value={form.identifier} onChange={(e) => setForm({ ...form, identifier: e.target.value })} placeholder="e.g. B-204" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Login ID (unit/apartment number)</label>
+            <input type="text" required value={form.identifier} onChange={(e) => setForm({ ...form, identifier: e.target.value })} placeholder="e.g. B-204" className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password{editItem && ' (leave blank to keep)'}</label>
-            <input type="password" required={!editItem} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password{editItem && ' (leave blank to keep)'}</label>
+            <input type="password" required={!editItem} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Resident Type</label>
-            <select value={form.residentType} onChange={(e) => setForm({ ...form, residentType: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Resident Type</label>
+            <select value={form.residentType} onChange={(e) => setForm({ ...form, residentType: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
               {RESIDENT_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number(s) (comma separated)</label>
-            <input type="text" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="e.g. +1234567890, +1987654321" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone Number(s) (comma separated)</label>
+            <input type="text" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="e.g. +1234567890, +1987654321" className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Identity Number (SSN/ID/Passport)</label>
-            <input type="text" value={form.identityNumber} onChange={(e) => setForm({ ...form, identityNumber: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Identity Number (SSN/ID/Passport)</label>
+            <input type="text" value={form.identityNumber} onChange={(e) => setForm({ ...form, identityNumber: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Assign Unit</label>
-            <select value={form.unitId} onChange={(e) => setForm({ ...form, unitId: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Assign Unit</label>
+            <select value={form.unitId} onChange={(e) => setForm({ ...form, unitId: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
               <option value="">No unit</option>
               {units.map((u) => <option key={u._id} value={u._id}>{u.unitNumber} (Vacant)</option>)}
             </select>

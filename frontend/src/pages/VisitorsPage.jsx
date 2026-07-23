@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
-import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 import Button from '../components/Button';
 
@@ -11,7 +10,7 @@ function QRCodeModal({ open, onClose, qrCode, visitorName }) {
   return (
     <Modal open={open} onClose={onClose} title="Visitor QR Code">
       <div className="space-y-4 text-center">
-        <div className="bg-white border-2 border-gray-200 rounded-xl p-6 inline-block mx-auto">
+        <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-6 inline-block mx-auto">
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`}
             alt="QR Code"
@@ -20,10 +19,10 @@ function QRCodeModal({ open, onClose, qrCode, visitorName }) {
           />
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-900">{visitorName}</p>
-          <p className="text-xs text-gray-500 mt-1 break-all">{qrUrl}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">{visitorName}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">{qrUrl}</p>
         </div>
-        <p className="text-xs text-gray-400">Visitor can show this QR code at the gate for check-in.</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">Visitor can show this QR code at the gate for check-in.</p>
         <Button onClick={() => { navigator.clipboard?.writeText(qrUrl); toast.success('URL copied'); }}>
           Copy URL
         </Button>
@@ -103,72 +102,88 @@ export default function VisitorsPage() {
     setQrModalOpen(true);
   };
 
-  if (loading) return <LoadingSkeleton lines={8} />;
+  if (loading) return (
+    <div className="max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">Visitor Log</h1>
+      </div>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="h-4 skeleton-shimmer rounded w-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Visitor Log</h1>
+        <div>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">Visitor Log</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track and manage visitor entries</p>
+        </div>
         <div className="flex gap-2">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all">
             <option value="">All</option>
             <option value="checked_in">Checked In</option>
             <option value="pre_approved">Pre-approved</option>
           </select>
-          <Button onClick={() => setPreApproveModalOpen(true)} variant="primary" className="bg-green-600 hover:bg-green-700">Pre-approve</Button>
+          <Button onClick={() => setPreApproveModalOpen(true)} variant="primary" className="bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">Pre-approve</Button>
           <Button onClick={() => setModalOpen(true)}>+ Log Visitor</Button>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
-          <p className="text-sm text-red-700">{error}</p>
-          <button onClick={fetchLogs} className="text-sm font-medium text-red-700 hover:text-red-900 underline">Retry</button>
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center justify-between">
+          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+          <button onClick={fetchLogs} className="text-sm font-medium text-red-700 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 underline">Retry</button>
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Visitor</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Phone</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Purpose</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Unit</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Check In</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Check Out</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Action</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Visitor</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Purpose</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Unit</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check In</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Check Out</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {logs.map((l) => (
-              <tr key={l._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium text-gray-900">{l.visitorName}</td>
-                <td className="px-6 py-4 text-gray-600">{l.phone || '-'}</td>
-                <td className="px-6 py-4 text-gray-600">{l.purpose}</td>
-                <td className="px-6 py-4 text-gray-600">{l.unitVisited}</td>
-                <td className="px-6 py-4 text-gray-600">{new Date(l.checkIn).toLocaleString()}</td>
-                <td className="px-6 py-4 text-gray-600">{l.checkOut ? new Date(l.checkOut).toLocaleString() : '-'}</td>
-                <td className="px-6 py-4">
+              <tr key={l._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{l.visitorName}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{l.phone || '-'}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{l.purpose}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{l.unitVisited}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{new Date(l.checkIn).toLocaleString()}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{l.checkOut ? new Date(l.checkOut).toLocaleString() : '-'}</td>
+                <td className="px-6 py-4 text-sm">
                   {l.preApproved && !l.checkOut ? (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">Pre-approved</span>
+                    <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Pre-approved</span>
                   ) : l.checkIn && !l.checkOut ? (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">Active</span>
+                    <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Active</span>
                   ) : (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">Completed</span>
+                    <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Completed</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-6 py-4 text-sm text-right">
                   <div className="flex gap-2 justify-end">
                     {l.preApproved && l.qrCode && (
-                      <button onClick={() => showQR(l)} className="text-sm text-blue-600 hover:text-blue-800 font-medium">QR</button>
+                      <button onClick={() => showQR(l)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">QR</button>
                     )}
                     {(!l.checkOut && !l.preApproved) && (
-                      <button onClick={() => checkout(l._id)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Check Out</button>
+                      <button onClick={() => checkout(l._id)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Check Out</button>
                     )}
                     {l.preApproved && !l.checkOut && (
-                      <button onClick={() => checkout(l._id)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Check Out</button>
+                      <button onClick={() => checkout(l._id)} className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors">Check Out</button>
                     )}
                   </div>
                 </td>
@@ -176,22 +191,27 @@ export default function VisitorsPage() {
             ))}
           </tbody>
         </table>
-        {logs.length === 0 && <p className="text-center text-gray-500 py-8">No visitor logs yet</p>}
+        {logs.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <svg className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            <p className="text-sm text-gray-500 dark:text-gray-400">No visitor logs yet</p>
+          </div>
+        )}
       </div>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Log Visitor">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Visitor Name</label>
-            <input type="text" required value={form.visitorName} onChange={(e) => setForm({ ...form, visitorName: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Visitor Name</label>
+            <input type="text" required value={form.visitorName} onChange={(e) => setForm({ ...form, visitorName: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
-            <input type="text" required value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose</label>
+            <input type="text" required value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Unit Visited</label>
-            <input type="text" required value={form.unitVisited} onChange={(e) => setForm({ ...form, unitVisited: e.target.value })} placeholder="e.g. A-101" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Visited</label>
+            <input type="text" required value={form.unitVisited} onChange={(e) => setForm({ ...form, unitVisited: e.target.value })} placeholder="e.g. A-101" className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div className="flex gap-3 pt-2">
             <Button type="submit" className="flex-1">Log</Button>
@@ -203,23 +223,23 @@ export default function VisitorsPage() {
       <Modal open={preApproveModalOpen} onClose={() => setPreApproveModalOpen(false)} title="Pre-approve Visitor">
         <form onSubmit={handlePreApprove} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Visitor Name</label>
-            <input type="text" required value={preApproveForm.visitorName} onChange={(e) => setPreApproveForm({ ...preApproveForm, visitorName: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Visitor Name</label>
+            <input type="text" required value={preApproveForm.visitorName} onChange={(e) => setPreApproveForm({ ...preApproveForm, visitorName: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
-            <input type="text" value={preApproveForm.phone} onChange={(e) => setPreApproveForm({ ...preApproveForm, phone: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone (optional)</label>
+            <input type="text" value={preApproveForm.phone} onChange={(e) => setPreApproveForm({ ...preApproveForm, phone: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
-            <input type="text" value={preApproveForm.purpose} onChange={(e) => setPreApproveForm({ ...preApproveForm, purpose: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose</label>
+            <input type="text" value={preApproveForm.purpose} onChange={(e) => setPreApproveForm({ ...preApproveForm, purpose: e.target.value })} className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Unit Visited</label>
-            <input type="text" required value={preApproveForm.unitVisited} onChange={(e) => setPreApproveForm({ ...preApproveForm, unitVisited: e.target.value })} placeholder="e.g. A-101" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Visited</label>
+            <input type="text" required value={preApproveForm.unitVisited} onChange={(e) => setPreApproveForm({ ...preApproveForm, unitVisited: e.target.value })} placeholder="e.g. A-101" className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all" />
           </div>
           <div className="flex gap-3 pt-2">
-            <Button type="submit" variant="primary" className="flex-1 bg-green-600 hover:bg-green-700">Pre-approve</Button>
+            <Button type="submit" variant="primary" className="flex-1 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700">Pre-approve</Button>
             <Button type="button" variant="secondary" onClick={() => setPreApproveModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
