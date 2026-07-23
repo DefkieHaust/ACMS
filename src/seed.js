@@ -12,6 +12,7 @@ export async function seedIfNeeded() {
       name: 'Super Admin',
       identifier: 'admin',
       passwordHash,
+      email: 'admin@acms.app',
       status: 'active',
     });
     console.log('✓ Site admin auto-created: identifier=admin, password=admin123');

@@ -6,6 +6,7 @@ import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import PageLoading from '../components/PageLoading';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 export default function NoticesPage() {
   const { user } = useAuth();
@@ -74,7 +75,7 @@ export default function NoticesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Notices</h1>
         {canPost && (
-          <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ New Notice</button>
+          <Button onClick={() => setModalOpen(true)}>+ New Notice</Button>
         )}
       </div>
 
@@ -131,8 +132,8 @@ export default function NoticesPage() {
             </div>
           )}
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Post</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Post</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

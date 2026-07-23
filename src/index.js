@@ -1,6 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -11,6 +12,7 @@ import { startInvoiceCron } from './cron.js';
 import { seedIfNeeded } from './seed.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { requestLogger } from './middleware/logger.js';
+import { setupWebSocket } from './websocket.js';
 
 import authRoutes from './routes/auth.js';
 import siteAdminRoutes from './routes/siteAdmin.js';
@@ -29,14 +31,10 @@ import documentRoutes from './routes/documents.js';
 import serviceRequestRoutes from './routes/serviceRequests.js';
 import paymentRoutes from './routes/payments.js';
 import auditLogRoutes from './routes/auditLogs.js';
+import analyticsRoutes from './routes/analytics.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
 
 const app = express();
 
@@ -46,7 +44,6 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
-app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(frontendDist));
 
 app.use(requestLogger);
@@ -69,6 +66,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/service-requests', serviceRequestRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.get('/api/health', (req, res) => {
   const dbState = mongoose.connection.readyState;
@@ -118,7 +116,9 @@ async function start() {
     await connectDB();
     await seedIfNeeded();
     startInvoiceCron();
-    server = app.listen(config.port, () => {
+    server = http.createServer(app);
+    setupWebSocket(server);
+    server.listen(config.port, () => {
       console.log(`ACMS backend running on port ${config.port}`);
     });
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

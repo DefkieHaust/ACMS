@@ -6,8 +6,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  try { const token = localStorage.getItem('token'); if (token) config.headers.Authorization = `Bearer ${token}`; } catch { /* localStorage unavailable */ }
   return config;
 });
 
@@ -20,8 +19,7 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch { /* ignore */ }
       window.location.href = '/login';
     }
     return Promise.reject(error);

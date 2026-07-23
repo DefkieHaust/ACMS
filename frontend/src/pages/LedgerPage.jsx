@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
 import PageLoading from '../components/PageLoading';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 export default function LedgerPage() {
   const { user } = useAuth();
@@ -51,7 +52,7 @@ export default function LedgerPage() {
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Committee Ledger</h1>
-        <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Entry</button>
+        <Button onClick={() => setModalOpen(true)}>+ Add Entry</Button>
       </div>
 
       {error && (
@@ -126,8 +127,8 @@ export default function LedgerPage() {
             <input type="text" required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Add</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Add</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

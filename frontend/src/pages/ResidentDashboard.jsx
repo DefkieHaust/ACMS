@@ -6,7 +6,7 @@ export default function ResidentDashboard() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    api.get('/dashboard/resident').then((r) => setData(r.data));
+    api.get('/dashboard/resident').then((r) => setData(r.data)).catch(() => setData(null));
   }, []);
 
   if (!data) return <div className="animate-pulse h-64 bg-gray-100 rounded-xl" />;
@@ -52,7 +52,7 @@ export default function ResidentDashboard() {
                 ))}
                 {(!data.bills || data.bills.length === 0) && <p className="text-sm text-gray-500">No bills</p>}
               </div>
-              <Link to="/bills" className="block mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium">View all bills →</Link>
+              <Link to="/bills" className="block mt-4 text-sm text-primary-600 hover:text-primary-800 font-medium">View all bills →</Link>
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -66,7 +66,7 @@ export default function ResidentDashboard() {
                 ))}
                 {(!data.notices || data.notices.length === 0) && <p className="text-sm text-gray-500">No notices</p>}
               </div>
-              <Link to="/notices" className="block mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium">View all notices →</Link>
+              <Link to="/notices" className="block mt-4 text-sm text-primary-600 hover:text-primary-800 font-medium">View all notices →</Link>
             </div>
           </div>
         </>

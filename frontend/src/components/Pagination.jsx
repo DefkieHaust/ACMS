@@ -1,3 +1,5 @@
+import Button from './Button';
+
 export default function Pagination({ page, totalPages, onPageChange }) {
   if (totalPages <= 1) return null;
   const pages = [];
@@ -7,20 +9,18 @@ export default function Pagination({ page, totalPages, onPageChange }) {
 
   return (
     <div className="flex items-center justify-center gap-2 mt-6">
-      <button onClick={() => onPageChange(page - 1)} disabled={page <= 1}
-        className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 disabled:opacity-50 hover:bg-gray-50">
+      <Button onClick={() => onPageChange(page - 1)} disabled={page <= 1} variant="secondary" size="sm">
         Previous
-      </button>
+      </Button>
       {pages.map(p => (
-        <button key={p} onClick={() => onPageChange(p)}
-          className={`px-3 py-1.5 text-sm rounded-lg ${p === page ? 'bg-indigo-600 text-white' : 'border border-gray-300 hover:bg-gray-50'}`}>
+        <Button key={p} onClick={() => onPageChange(p)} size="sm"
+          variant={p === page ? 'primary' : 'secondary'}>
           {p}
-        </button>
+        </Button>
       ))}
-      <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages}
-        className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 disabled:opacity-50 hover:bg-gray-50">
+      <Button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} variant="secondary" size="sm">
         Next
-      </button>
+      </Button>
     </div>
   );
 }

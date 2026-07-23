@@ -49,7 +49,7 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
         {notifications.some((n) => !n.read) && (
-          <button onClick={markAllRead} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Mark all as read</button>
+          <button onClick={markAllRead} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Mark all as read</button>
         )}
       </div>
 
@@ -62,15 +62,15 @@ export default function NotificationsPage() {
 
       <div className="space-y-2">
         {notifications.map((n) => (
-          <div key={n._id} className={`bg-white rounded-xl shadow-sm border p-4 flex items-start justify-between gap-4 ${!n.read ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-100'}`}>
+          <div key={n._id} className={`bg-white rounded-xl shadow-sm border p-4 flex items-start justify-between gap-4 ${!n.read ? 'border-primary-200 bg-primary-50/30' : 'border-gray-100'}`}>
             <div className="flex-1 min-w-0">
               <p className={`text-sm ${!n.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{n.message}</p>
               <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
-              {n.link && <a href={n.link} className="text-xs text-indigo-600 hover:text-indigo-800 mt-1 inline-block">View details</a>}
+              {n.link && <a href={n.link} className="text-xs text-primary-600 hover:text-primary-800 mt-1 inline-block">View details</a>}
             </div>
             <div className="flex gap-2 shrink-0">
               {!n.read && (
-                <button onClick={() => markRead(n._id)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark read</button>
+                <button onClick={() => markRead(n._id)} className="text-xs text-primary-600 hover:text-primary-800 font-medium">Mark read</button>
               )}
               <button onClick={() => handleDelete(n._id)} className="text-xs text-red-600 hover:text-red-800 font-medium">Delete</button>
             </div>

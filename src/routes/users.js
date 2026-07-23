@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { updateUserSchema, changePasswordSchema } from '../utils/validate.js';
+import { updateUserSchema, adminChangePasswordSchema } from '../utils/validate.js';
 import { hashPassword, escapeRegex, getPagination } from '../utils/helpers.js';
 import { User } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
@@ -75,7 +75,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id', validate(updateUserSchema), async (req, res) => {
+router.put('/:id', validate(updateUserSchema), audit('update', 'user'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const target = await User.findById(req.params.id);
@@ -91,7 +91,7 @@ router.put('/:id', validate(updateUserSchema), async (req, res) => {
   }
 });
 
-router.put('/:id/change-password', async (req, res) => {
+router.put('/:id/change-password', validate(adminChangePasswordSchema), audit('update', 'user_password'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const target = await User.findById(req.params.id);
@@ -100,11 +100,7 @@ router.put('/:id/change-password', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Cannot manage this user' });
     }
 
-    const { newPassword } = req.body;
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
-    }
-
+    const { newPassword } = req.validatedBody;
     target.passwordHash = await hashPassword(newPassword);
     await target.save();
     res.json({ success: true, data: { message: 'Password changed successfully' } });

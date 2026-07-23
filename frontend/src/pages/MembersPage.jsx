@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import { ROLE_LABELS } from '../utils/constants';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 export default function MembersPage() {
   const { user } = useAuth();
@@ -142,8 +143,8 @@ export default function MembersPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Committee Members</h1>
         <div className="flex gap-2">
-          <button onClick={() => { setNewRoleName(''); setRoleModalOpen(true); }} className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">Manage Roles</button>
-          <button onClick={openAdd} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Member</button>
+          <Button onClick={() => { setNewRoleName(''); setRoleModalOpen(true); }} variant="secondary">Manage Roles</Button>
+          <Button onClick={openAdd}>+ Add Member</Button>
         </div>
       </div>
 
@@ -177,7 +178,7 @@ export default function MembersPage() {
                 </td>
                 <td className="px-6 py-4 text-gray-600 text-sm">{m.customRole || m.userId?.customRole || '-'}</td>
                 <td className="px-6 py-4 text-right space-x-2">
-                  <button onClick={() => openEditRole(m)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Change Role</button>
+                  <button onClick={() => openEditRole(m)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Change Role</button>
                   {m.role !== 'committee_head' && (
                     <button onClick={() => { setConfirmId(m._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Remove</button>
                   )}
@@ -216,8 +217,8 @@ export default function MembersPage() {
             </select>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Add</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Add</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -239,8 +240,8 @@ export default function MembersPage() {
             </select>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Update</button>
-            <button type="button" onClick={() => setEditModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Update</Button>
+            <Button type="button" variant="secondary" onClick={() => setEditModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -249,7 +250,7 @@ export default function MembersPage() {
         <div className="space-y-4">
           <form onSubmit={handleCreateRole} className="flex gap-2">
             <input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="Role name..." className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Add</button>
+            <Button type="submit" size="sm">Add</Button>
           </form>
           <div className="divide-y divide-gray-100">
             {customRoles.length === 0 && <p className="text-sm text-gray-500 py-4 text-center">No custom roles defined yet</p>}

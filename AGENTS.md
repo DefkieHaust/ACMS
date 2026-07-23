@@ -54,11 +54,11 @@ Examples:
 ### Directory Structure
 ```
 src/                     # Backend
-├── config/              # index.js, db.js, constants.js
-├── middleware/          # auth.js, validate.js, rateLimiter.js, audit.js, responseFormatter.js
-├── models/              # Mongoose models (14 files)
-├── routes/              # Express routes (11 files)
-├── services/            # payment.js, email.js
+├── config/              # index.js, db.js, constants.js, validate.js
+├── middleware/          # auth.js, validate.js, rateLimiter.js, audit.js, responseFormatter.js, logger.js
+├── models/              # Mongoose models (19 files)
+├── routes/              # Express routes (17 files)
+├── services/            # payment.js, email.js, notify.js
 ├── utils/               # helpers.js, validate.js
 ├── index.js             # App entry point
 ├── seed.js              # Auto-seeder
@@ -92,6 +92,30 @@ tests/                   # Jest + Supertest tests (12 files)
 
 ## Known Issues / Tech Debt
 
+All 10 original issues are **fixed**:
+
+| # | Issue | Status |
+|---|-------|--------|
+| 1 | `/admin/accounts` routes after `export default` in siteAdmin.js | ✅ Fixed |
+| 2 | PUT `/users/:id` uses `req.body` instead of `req.validatedBody` | ✅ Fixed |
+| 3 | PUT `/apartment/units/:id` no validation + no tenant isolation | ✅ Fixed |
+| 4 | GET `/invoices/generate` mutation using GET verb | ✅ Fixed (uses POST) |
+| 5 | Endpoints with no input validation | ✅ Fixed (validate() added to PUT /accounts/:id, change-password; Zod schemas for all mutations) |
+| 6 | DELETE endpoints don't validate ObjectId — CastError crash | ✅ Fixed (all 12 validate inline) |
+| 7 | Audit middleware not applied to complaints, visitors, notices, users, export, uploads | ✅ Fixed (added audit() to complaints, visitors, notices, users, facilities, serviceRequests, documents, uploads) |
+| 8 | Regex search vulnerability on 5+ endpoints | ✅ Fixed (escapeRegex everywhere, no unescaped user regex input) |
+| 9 | File upload no tenant isolation | ✅ Fixed (Upload model with apartmentId, apartment subdirectories, authenticated download endpoints, public /uploads static serve removed) |
+| 10 | AccountManagementPage change-user-password requires current password | ✅ Fixed (adminChangePasswordSchema without currentPassword, validate() applied) |
+
+### Remaining improvements (for future versions)
+- **Real-time notifications:** WebSocket push (replace 30s polling) ✅ Done
+- **Email delivery:** Wire User.email field into email service, configure SMTP ✅ Done
+- **Design system polish:** Convert existing components to DESIGN.md tokens ✅ Done
+- **Dark mode:** Theme toggle with CSS variables ✅ Done
+- **Multi-language support:** i18n setup
+- **Analytics dashboard:** Advanced charts and reporting
+
+<!-- original list kept for reference -- DO NOT DELETE
 ### Critical (fix in Phase 1)
 1. `/admin/accounts` routes defined AFTER `export default` in siteAdmin.js — DEAD CODE
 2. PUT `/users/:id` imports validation schema but uses `req.body` instead of `req.validatedBody`
@@ -105,12 +129,19 @@ tests/                   # Jest + Supertest tests (12 files)
 8. Regex search vulnerability on 5+ endpoints
 9. File upload no tenant isolation
 10. AccountManagementPage change-user-password requires current password (admins can't set it)
+-->
 
 ### Design System Status
-- DESIGN.md created with full design tokens
-- Need to convert existing components to use design system
-- Missing: loading skeleton component, empty state component, confirm dialog modal, pagination component, notification badge component
-- Missing: @tailwindcss/forms plugin
+- DESIGN.md tokens fully implemented ✅
+- Reusable components: Button.jsx (4 variants, 3 sizes), Card.jsx (default/stat/hover), Badge.jsx (17 statuses)
+- All 25 pages/components refactored to use design tokens (primary-* color palette)
+- Dark sidebar (`bg-gray-900`) matching DESIGN.md spec
+- Dark mode toggle with class strategy + localStorage persistence
+- @tailwindcss/forms and tailwindcss-animate plugins installed
+- Animation tokens: fade-in, slide-in-right, zoom-in-95
+- All interactive elements are keyboard accessible
+- All modals trap focus and close on Escape
+- Semantic HTML throughout
 
 ## Design System Reference
 See [DESIGN.md](./DESIGN.md) for:

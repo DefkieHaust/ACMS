@@ -3,6 +3,7 @@ import api from '../api/client';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import Pagination from '../components/Pagination';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState([]);
@@ -33,7 +34,7 @@ export default function AuditLogsPage() {
     api.get(`/audit-logs?${params.toString()}`)
       .then((r) => {
         setLogs(r.data);
-        if (r.pagination) setTotalPages(r.pagination.totalPages);
+        if (r.data.pagination) setTotalPages(r.data.pagination.totalPages);
       })
       .catch((e) => {
         setError(e.response?.data?.error || 'Failed to load audit logs');
@@ -76,7 +77,7 @@ export default function AuditLogsPage() {
             <label className="block text-xs font-medium text-gray-500 mb-1">Search path</label>
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by API path..." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
           </div>
-          <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Search</button>
+          <Button type="submit">Search</Button>
         </form>
       </div>
 

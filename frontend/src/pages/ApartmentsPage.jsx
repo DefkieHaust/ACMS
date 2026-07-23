@@ -5,6 +5,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
 import { CURRENCIES, APARTMENT_TYPES } from '../utils/constants';
+import Button from '../components/Button';
 
 export default function ApartmentsPage() {
   const [apartments, setApartments] = useState([]);
@@ -128,7 +129,7 @@ export default function ApartmentsPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Apartments</h1>
-        <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ New Apartment</button>
+        <Button onClick={openCreate}>+ New Apartment</Button>
       </div>
 
       {error && (
@@ -139,7 +140,7 @@ export default function ApartmentsPage() {
       )}
 
       <div className="mb-4">
-        <input type="text" placeholder="Search apartments..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
+        <input type="text" placeholder="Search apartments..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -170,7 +171,7 @@ export default function ApartmentsPage() {
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex flex-col gap-1 items-end">
-                    <button onClick={() => openEdit(a)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+                    <button onClick={() => openEdit(a)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Edit</button>
                     <button onClick={() => { setConfirmId(a._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
                     <button onClick={() => { setSelectedApt(a); setAdminForm({ name: '', identifier: '', password: '' }); setAdminOpen(true); }} className="text-sm text-green-600 hover:text-green-800 font-medium">Create Admin</button>
                   </div>
@@ -188,11 +189,11 @@ export default function ApartmentsPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-            <input type="text" required disabled={!!editItem} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+            <input type="text" required disabled={!!editItem} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <input type="text" required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+            <input type="text" required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -220,14 +221,14 @@ export default function ApartmentsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
-            <select value={form.planId} onChange={(e) => setForm({ ...form, planId: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <select value={form.planId} onChange={(e) => setForm({ ...form, planId: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
               <option value="">No plan</option>
               {plans.map((p) => <option key={p._id} value={p._id}>{p.name} (${p.price}/{p.priceType})</option>)}
             </select>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Save</button>
-            <button type="button" onClick={() => setEditOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Save</Button>
+            <Button type="button" variant="secondary" onClick={() => setEditOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -236,15 +237,15 @@ export default function ApartmentsPage() {
         <form onSubmit={createAdmin} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input type="text" required value={adminForm.name} onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+            <input type="text" required value={adminForm.name} onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Username / Login ID</label>
-            <input type="text" required value={adminForm.identifier} onChange={(e) => setAdminForm({ ...adminForm, identifier: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+            <input type="text" required value={adminForm.identifier} onChange={(e) => setAdminForm({ ...adminForm, identifier: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input type="password" required value={adminForm.password} onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+            <input type="password" required value={adminForm.password} onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number(s) (comma separated)</label>
@@ -255,8 +256,8 @@ export default function ApartmentsPage() {
             <input type="text" value={adminForm.identityNumber} onChange={(e) => setAdminForm({ ...adminForm, identityNumber: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Create Admin</button>
-            <button type="button" onClick={() => setAdminOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Create Admin</Button>
+            <Button type="button" variant="secondary" onClick={() => setAdminOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

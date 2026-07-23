@@ -2,6 +2,7 @@ import { useState } from 'react';
 import api from '../api/client';
 import Modal from './Modal';
 import toast from 'react-hot-toast';
+import Button from './Button';
 
 export default function PaymentModal({ open, onClose, amount, currency = 'USD', billId, invoiceId, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -40,24 +41,16 @@ export default function PaymentModal({ open, onClose, amount, currency = 'USD', 
           <p className="text-sm text-gray-600">Amount to pay:</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{currency === 'USD' ? '$' : currency}{amount?.toFixed(2)}</p>
         </div>
-        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-          <p className="text-sm text-indigo-700">Demo payment mode — no real charges will be made.</p>
+        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <p className="text-sm text-primary-700">Demo payment mode — no real charges will be made.</p>
         </div>
         <div className="flex gap-3 pt-2">
-          <button
-            onClick={handlePay}
-            disabled={loading}
-            className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium disabled:opacity-50"
-          >
+          <Button onClick={handlePay} disabled={loading} className="flex-1">
             {loading ? 'Processing...' : `Pay ${currency === 'USD' ? '$' : currency}${amount?.toFixed(2)}`}
-          </button>
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium disabled:opacity-50"
-          >
+          </Button>
+          <Button onClick={onClose} disabled={loading} variant="secondary" className="flex-1">
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

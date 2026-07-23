@@ -5,6 +5,8 @@ import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
+import Badge from '../components/Badge';
 
 export default function BookingsPage() {
   const { user } = useAuth();
@@ -76,7 +78,7 @@ export default function BookingsPage() {
             ))}
           </select>
           {selectedFacility && isResident && (
-            <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Book Now</button>
+            <Button onClick={() => setModalOpen(true)}>Book Now</Button>
           )}
         </div>
       </div>
@@ -108,7 +110,7 @@ export default function BookingsPage() {
                 <td className="px-6 py-4 text-gray-600">{b.startTime} - {b.endTime}</td>
                 <td className="px-6 py-4 text-gray-600 max-w-xs truncate">{b.purpose || '-'}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${b.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{b.status}</span>
+                  <Badge status={b.status} />
                 </td>
                 <td className="px-6 py-4 text-right">
                   {b.status === 'confirmed' && (
@@ -144,8 +146,8 @@ export default function BookingsPage() {
             <textarea value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Confirm Booking</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Confirm Booking</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

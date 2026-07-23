@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    init: true
     ports:
       - "5000:5000"
     environment:
@@ -8,6 +9,11 @@ services:
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - NODE_ENV=production
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:5000}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
     depends_on:
       mongo:
         condition: service_healthy

@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import PaymentModal from '../components/PaymentModal';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
+import Badge from '../components/Badge';
 
 export default function InvoicesPage() {
   const { user } = useAuth();
@@ -55,7 +57,7 @@ export default function InvoicesPage() {
 
   const generateInvoices = async () => {
     try {
-      const r = await api.get('/admin/invoices/generate');
+      const r = await api.post('/admin/invoices/generate');
       toast.success(r.data.message);
       fetchInvoices();
     } catch (err) {
@@ -71,8 +73,8 @@ export default function InvoicesPage() {
         <h1 className="text-2xl font-bold text-gray-900">SaaS Invoices</h1>
         {isSiteAdmin && (
           <div className="flex gap-2">
-            <button onClick={generateInvoices} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Generate Monthly</button>
-            <button onClick={handleExport} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">Export CSV</button>
+            <Button onClick={generateInvoices}>Generate Monthly</Button>
+            <Button onClick={handleExport} variant="primary" className="bg-green-600 hover:bg-green-700">Export CSV</Button>
           </div>
         )}
       </div>
@@ -105,7 +107,7 @@ export default function InvoicesPage() {
                 <td className="px-6 py-4 text-gray-600">{inv.planId?.name || '-'}</td>
                 <td className="px-6 py-4 font-medium text-gray-900">{(inv.currency || '$')}{inv.amount?.toFixed(2)}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${inv.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{inv.status}</span>
+                  <Badge status={inv.status} />
                 </td>
                 <td className="px-6 py-4 text-gray-600">{new Date(inv.dueDate).toLocaleDateString()}</td>
                 {isSiteAdmin && (

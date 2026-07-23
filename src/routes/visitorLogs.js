@@ -1,11 +1,14 @@
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, authorize, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { audit } from '../middleware/audit.js';
 import { createVisitorLogSchema, checkoutVisitorSchema } from '../utils/validate.js';
 import { VisitorLog } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
 import { getPagination } from '../utils/helpers.js';
+import { notifyApartmentAdmins } from '../services/notify.js';
 
 const router = Router();
 router.use(authenticate, tenantIsolation);
@@ -37,7 +40,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HEAD), validate(createVisitorLogSchema), async (req, res) => {
+router.post('/', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HEAD), validate(createVisitorLogSchema), audit('create', 'visitor_log'), async (req, res) => {
   try {
     const log = await VisitorLog.create({
       apartmentId: req.apartmentId,
@@ -50,7 +53,7 @@ router.post('/', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HEAD), valida
   }
 });
 
-router.post('/pre-approve', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HEAD), async (req, res) => {
+router.post('/pre-approve', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HEAD), audit('create', 'visitor_pre_approve'), async (req, res) => {
   try {
     const { visitorName, purpose, unitVisited, phone } = req.body;
     if (!visitorName || !unitVisited) return res.status(400).json({ success: false, error: 'Visitor name and unit are required' });
@@ -64,6 +67,7 @@ router.post('/pre-approve', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HE
       qrCode,
       preApprovedBy: req.user.userId,
     });
+    await notifyApartmentAdmins(req.apartmentId, `Pre-approved visitor: ${visitorName} for ${unitVisited}`, `/visitors`);
     res.status(201).json({ success: true, data: log });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to pre-approve visitor' });
@@ -85,9 +89,9 @@ router.get('/verify/:qrCode', async (req, res) => {
   }
 });
 
-router.put('/:id/checkout', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HEAD), async (req, res) => {
+router.put('/:id/checkout', authorize(ROLES.COMMITTEE_MEMBER, ROLES.COMMITTEE_HEAD), audit('update', 'visitor_checkout'), async (req, res) => {
   try {
-    if (!req.params.id || req.params.id.length !== 24) {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       const log = await VisitorLog.findOneAndUpdate(
         { qrCode: req.params.id, apartmentId: req.apartmentId, checkOut: null },
         { checkOut: new Date() },

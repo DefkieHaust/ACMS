@@ -5,7 +5,7 @@ export default function ApartmentAdminDashboard() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    api.get('/dashboard/apartment-admin').then((r) => setData(r.data));
+    api.get('/dashboard/apartment-admin').then((r) => setData(r.data)).catch(() => setData(null));
   }, []);
 
   if (!data) return <div className="animate-pulse h-64 bg-gray-100 rounded-xl" />;

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/constants';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
+import Badge from '../components/Badge';
 
 export default function PaymentHistoryPage() {
   const { user } = useAuth();
@@ -67,7 +68,7 @@ export default function PaymentHistoryPage() {
                 <td className="px-6 py-4 font-medium text-gray-900">${p.amount?.toFixed(2)}</td>
                 <td className="px-6 py-4 text-gray-600">{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '-'}</td>
                 <td className="px-6 py-4">
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">{p.status}</span>
+                  <Badge status={p.status} />
                 </td>
               </tr>
             ))}

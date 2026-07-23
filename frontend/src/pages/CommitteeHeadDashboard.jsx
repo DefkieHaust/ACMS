@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
-import { ROLES, BILL_STATUS } from '../utils/constants';
+import { ROLES } from '../utils/constants';
 
 export default function CommitteeHeadDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    api.get('/dashboard/committee-head').then((r) => setData(r.data));
+    api.get('/dashboard/committee-head').then((r) => setData(r.data)).catch(() => setData(null));
   }, []);
 
   if (!data) return <div className="animate-pulse h-64 bg-gray-100 rounded-xl" />;

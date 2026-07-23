@@ -4,6 +4,8 @@ import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import PageLoading from '../components/PageLoading';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
+import Card from '../components/Card';
 
 export default function CommitteesPage() {
   const [committees, setCommittees] = useState([]);
@@ -103,7 +105,7 @@ export default function CommitteesPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Committees</h1>
-        <button onClick={() => { setForm({ name: '', description: '' }); setModalOpen(true); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ New Committee</button>
+        <Button onClick={() => { setForm({ name: '', description: '' }); setModalOpen(true); }}>+ New Committee</Button>
       </div>
 
       {error && (
@@ -115,18 +117,18 @@ export default function CommitteesPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {committees.map((c) => (
-          <div key={c._id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <Card key={c._id}>
             <h3 className="text-lg font-semibold text-gray-900">{c.name}</h3>
             <p className="text-sm text-gray-500 mt-1">Head: {c.headUserId?.name || 'Not assigned'}</p>
             {c.description && <p className="text-sm text-gray-500 mt-2">{c.description}</p>}
             <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-              <button onClick={() => openEdit(c)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+              <button onClick={() => openEdit(c)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Edit</button>
               <button onClick={() => { setConfirmId(c._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
               {!c.headUserId && (
                 <button onClick={() => openHeadModal(c)} className="text-sm text-green-600 hover:text-green-800 font-medium">Set Head</button>
               )}
             </div>
-          </div>
+          </Card>
         ))}
         {committees.length === 0 && (
           <div className="col-span-full text-center py-12 text-gray-500">No committees yet. Create your first committee.</div>
@@ -146,8 +148,8 @@ export default function CommitteesPage() {
             <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="e.g. Oversees maintenance and repairs" rows="2" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Create</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Create</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -163,8 +165,8 @@ export default function CommitteesPage() {
             <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows="2" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Save</button>
-            <button type="button" onClick={() => setEditOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Save</Button>
+            <Button type="button" variant="secondary" onClick={() => setEditOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -184,8 +186,8 @@ export default function CommitteesPage() {
             <input type="password" required value={headForm.password} onChange={(e) => setHeadForm({ ...headForm, password: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Create</button>
-            <button type="button" onClick={() => setHeadModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Create</Button>
+            <Button type="button" variant="secondary" onClick={() => setHeadModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

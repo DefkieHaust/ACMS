@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, tenantIsolation, authorize } from '../middleware/auth.js';
+import { audit } from '../middleware/audit.js';
 import { validate } from '../middleware/validate.js';
 import { getPagination } from '../utils/helpers.js';
-import { Facility, FacilityBooking, Unit } from '../models/index.js';
+import { Facility, FacilityBooking, Unit, User } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
+import { notifyApartmentAdmins, notifyResident } from '../services/notify.js';
 
 const router = Router();
 router.use(authenticate, tenantIsolation);
@@ -23,7 +25,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', authorize(ROLES.APARTMENT_ADMIN), async (req, res) => {
+router.post('/', authorize(ROLES.APARTMENT_ADMIN), audit('create', 'facility'), async (req, res) => {
   try {
     const { name, description, capacity, available } = req.body;
     if (!name || !capacity) return res.status(400).json({ success: false, error: 'Name and capacity are required' });
@@ -34,7 +36,7 @@ router.post('/', authorize(ROLES.APARTMENT_ADMIN), async (req, res) => {
   }
 });
 
-router.put('/:id', authorize(ROLES.APARTMENT_ADMIN), async (req, res) => {
+router.put('/:id', authorize(ROLES.APARTMENT_ADMIN), audit('update', 'facility'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { name, description, capacity, available } = req.body;
@@ -51,7 +53,7 @@ router.put('/:id', authorize(ROLES.APARTMENT_ADMIN), async (req, res) => {
   }
 });
 
-router.delete('/:id', authorize(ROLES.APARTMENT_ADMIN), async (req, res) => {
+router.delete('/:id', authorize(ROLES.APARTMENT_ADMIN), audit('delete', 'facility'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const facility = await Facility.findOneAndDelete({ _id: req.params.id, apartmentId: req.apartmentId });
@@ -78,7 +80,7 @@ router.get('/:facilityId/bookings', async (req, res) => {
   }
 });
 
-router.post('/:facilityId/bookings', authorize(ROLES.RESIDENT), async (req, res) => {
+router.post('/:facilityId/bookings', authorize(ROLES.RESIDENT), audit('create', 'facility_booking'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.facilityId)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const facility = await Facility.findOne({ _id: req.params.facilityId, apartmentId: req.apartmentId });
@@ -103,13 +105,14 @@ router.post('/:facilityId/bookings', authorize(ROLES.RESIDENT), async (req, res)
       apartmentId: req.apartmentId, facilityId: req.params.facilityId,
       unitId: unit._id, date: new Date(date), startTime, endTime, purpose,
     });
+    await notifyApartmentAdmins(req.apartmentId, `New facility booking: ${facility.name} on ${date}`, '/bookings');
     res.status(201).json({ success: true, data: booking });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to create booking' });
   }
 });
 
-router.put('/bookings/:id/cancel', async (req, res) => {
+router.put('/bookings/:id/cancel', authorize(ROLES.APARTMENT_ADMIN, ROLES.RESIDENT), audit('update', 'cancel_booking'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     let filter = { _id: req.params.id, apartmentId: req.apartmentId, status: 'confirmed' };
@@ -119,6 +122,12 @@ router.put('/bookings/:id/cancel', async (req, res) => {
     }
     const booking = await FacilityBooking.findOneAndUpdate(filter, { status: 'cancelled' }, { new: true });
     if (!booking) return res.status(404).json({ success: false, error: 'Booking not found or already cancelled' });
+    if (booking.unitId) {
+      const unit = await Unit.findById(booking.unitId);
+      if (unit?.residentUserId) {
+        await notifyResident(req.apartmentId, unit.residentUserId, 'Your facility booking was cancelled', '/bookings');
+      }
+    }
     res.json({ success: true, data: booking });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to cancel booking' });

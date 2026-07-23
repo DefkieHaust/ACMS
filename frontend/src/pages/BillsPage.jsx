@@ -7,6 +7,8 @@ import Modal from '../components/Modal';
 import PaymentModal from '../components/PaymentModal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
+import Badge from '../components/Badge';
 
 export default function BillsPage() {
   const { user } = useAuth();
@@ -111,7 +113,7 @@ export default function BillsPage() {
               {committees.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
             </select>
             {selectedCommittee && (
-              <button onClick={() => { setForm({ amount: '', period: '', dueDate: '' }); setModalOpen(true); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Generate Bills</button>
+              <Button onClick={() => { setForm({ amount: '', period: '', dueDate: '' }); setModalOpen(true); }}>Generate Bills</Button>
             )}
           </div>
         )}
@@ -146,7 +148,7 @@ export default function BillsPage() {
                 <td className="px-6 py-4 font-medium text-gray-900">${b.amount}</td>
                 <td className="px-6 py-4 text-gray-600">{new Date(b.dueDate).toLocaleDateString()}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${b.status === 'paid' ? 'bg-green-100 text-green-700' : b.status === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>{b.status}</span>
+                  <Badge status={b.status} />
                 </td>
                 {isResident && (
                   <td className="px-6 py-4 text-right">
@@ -158,7 +160,7 @@ export default function BillsPage() {
                 {isResident && (
                   <td className="px-6 py-4 text-right">
                     {b.status === 'paid' && (
-                      <Link to={`/receipt/${b._id}`} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Receipt</Link>
+                      <Link to={`/receipt/${b._id}`} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Receipt</Link>
                     )}
                   </td>
                 )}
@@ -185,8 +187,8 @@ export default function BillsPage() {
           </div>
           <p className="text-sm text-gray-500">Bills will be generated for all occupied units in this committee.</p>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Generate</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Generate</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

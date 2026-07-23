@@ -5,6 +5,8 @@ import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
+import Badge from '../components/Badge';
 
 const PRIORITY_COLORS = {
   low: 'bg-gray-100 text-gray-700',
@@ -101,7 +103,7 @@ export default function ServiceRequestsPage() {
             <option value="cancelled">Cancelled</option>
           </select>
           {isResident && (
-            <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">Submit Request</button>
+            <Button onClick={() => setModalOpen(true)}>Submit Request</Button>
           )}
         </div>
       </div>
@@ -140,7 +142,7 @@ export default function ServiceRequestsPage() {
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${PRIORITY_COLORS[r.priority] || 'bg-gray-100 text-gray-700'}`}>{r.priority}</span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[r.status] || 'bg-gray-100 text-gray-700'}`}>{r.status.replace('_', ' ')}</span>
+                  <Badge status={r.status} />
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex gap-2 justify-end">
@@ -151,7 +153,7 @@ export default function ServiceRequestsPage() {
                       <button onClick={() => handleUpdate(r._id, { status: 'completed' })} className="text-sm text-green-600 hover:text-green-800 font-medium">Complete</button>
                     )}
                     {canRate(r) && (
-                      <button onClick={() => { setSelectedRequest(r); setRating(0); setRateModalOpen(true); }} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Rate</button>
+                      <button onClick={() => { setSelectedRequest(r); setRating(0); setRateModalOpen(true); }} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Rate</button>
                     )}
                     {isAdmin && r.status !== 'cancelled' && r.status !== 'completed' && (
                       <button onClick={() => handleUpdate(r._id, { status: 'cancelled' })} className="text-sm text-red-600 hover:text-red-800 font-medium">Cancel</button>
@@ -199,8 +201,8 @@ export default function ServiceRequestsPage() {
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Submit</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Submit</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -216,8 +218,8 @@ export default function ServiceRequestsPage() {
             ))}
           </div>
           <div className="flex gap-3 pt-2">
-            <button onClick={handleRate} disabled={!rating} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium disabled:opacity-50">Submit Rating</button>
-            <button onClick={() => { setRateModalOpen(false); setRating(0); }} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button onClick={handleRate} disabled={!rating} className="flex-1">Submit Rating</Button>
+            <Button variant="secondary" onClick={() => { setRateModalOpen(false); setRating(0); }} className="flex-1">Cancel</Button>
           </div>
         </div>
       </Modal>

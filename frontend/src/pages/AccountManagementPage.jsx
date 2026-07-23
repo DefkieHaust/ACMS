@@ -5,6 +5,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import { ROLE_LABELS } from '../utils/constants';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 export default function AccountManagementPage() {
   const [accounts, setAccounts] = useState([]);
@@ -125,7 +126,7 @@ export default function AccountManagementPage() {
       return;
     }
     try {
-      await api.post(`/auth/change-password`, { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+      await api.put(`/users/${pwForm.userId}/change-password`, { newPassword: pwForm.newPassword });
       toast.success('Password changed');
       setPwOpen(false);
     } catch (err) {
@@ -162,7 +163,7 @@ export default function AccountManagementPage() {
       <div>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Account Management</h1>
-          <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Create Account</button>
+          <Button onClick={openCreate}>+ Create Account</Button>
         </div>
 
         {error && (
@@ -173,7 +174,7 @@ export default function AccountManagementPage() {
         )}
 
         <div className="mb-4">
-          <input type="text" placeholder="Search accounts..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" />
+          <input type="text" placeholder="Search accounts..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-sm" />
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -194,7 +195,7 @@ export default function AccountManagementPage() {
                   <td className="px-6 py-4 font-medium text-gray-900">{a.name}</td>
                   <td className="px-6 py-4 text-gray-600">{a.identifier}</td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700">{ROLE_LABELS[a.type] || a.type}</span>
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700">{ROLE_LABELS[a.type] || a.type}</span>
                   </td>
                   <td className="px-6 py-4 text-gray-600">{a.apartmentId?.name || '-'}</td>
                   <td className="px-6 py-4">
@@ -202,7 +203,7 @@ export default function AccountManagementPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex flex-col gap-1 items-end">
-                      <button onClick={() => openEdit(a)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+                      <button onClick={() => openEdit(a)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Edit</button>
                       <button onClick={() => openChangePassword(a)} className="text-sm text-yellow-600 hover:text-yellow-800 font-medium">Password</button>
                       <button onClick={() => { setConfirmId(a._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
                     </div>
@@ -222,17 +223,17 @@ export default function AccountManagementPage() {
           <form onSubmit={handleChangeOwnPassword} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-              <input type="password" required value={changeOwnPw.currentPassword} onChange={(e) => setChangeOwnPw({ ...changeOwnPw, currentPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="password" required value={changeOwnPw.currentPassword} onChange={(e) => setChangeOwnPw({ ...changeOwnPw, currentPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-              <input type="password" required minLength={6} value={changeOwnPw.newPassword} onChange={(e) => setChangeOwnPw({ ...changeOwnPw, newPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="password" required minLength={6} value={changeOwnPw.newPassword} onChange={(e) => setChangeOwnPw({ ...changeOwnPw, newPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-              <input type="password" required value={changeOwnPw.confirmPassword} onChange={(e) => setChangeOwnPw({ ...changeOwnPw, confirmPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" />
+              <input type="password" required value={changeOwnPw.confirmPassword} onChange={(e) => setChangeOwnPw({ ...changeOwnPw, confirmPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
             </div>
-            <button type="submit" className="w-full py-2.5 px-4 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">Change Password</button>
+            <Button type="submit" className="w-full">Change Password</Button>
           </form>
         </div>
       </div>
@@ -268,8 +269,8 @@ export default function AccountManagementPage() {
             </select>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Create</button>
-            <button type="button" onClick={() => setCreateOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Create</Button>
+            <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -291,8 +292,8 @@ export default function AccountManagementPage() {
             </select>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Update</button>
-            <button type="button" onClick={() => setEditOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Update</Button>
+            <Button type="button" variant="secondary" onClick={() => setEditOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -312,8 +313,8 @@ export default function AccountManagementPage() {
             <input type="password" required value={pwForm.confirmPassword} onChange={(e) => setPwForm({ ...pwForm, confirmPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Change</button>
-            <button type="button" onClick={() => setPwOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Change</Button>
+            <Button type="button" variant="secondary" onClick={() => setPwOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

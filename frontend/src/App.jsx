@@ -29,12 +29,13 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
 const ServiceRequestsPage = lazy(() => import('./pages/ServiceRequestsPage'));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const PaymentHistoryPage = lazy(() => import('./pages/PaymentHistoryPage'));
 const ReceiptPage = lazy(() => import('./pages/ReceiptPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageLoading() {
-  return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>;
+  return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" /></div>;
 }
 
 function ProtectedRoute({ children }) {
@@ -42,6 +43,13 @@ function ProtectedRoute({ children }) {
   if (loading) return <PageLoading />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (user?.type === 'site_admin') return <Navigate to="/admin/dashboard" replace />;
+  return <Layout>{children}</Layout>;
+}
+
+function AnyAuthRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return <PageLoading />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <Layout>{children}</Layout>;
 }
 
@@ -65,7 +73,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
       </div>
     );
   }
@@ -91,7 +99,8 @@ export default function App() {
         <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
         <Route path="/facilities" element={<ProtectedRoute><RoleRoute roles={['apartment_admin']}><FacilitiesPage /></RoleRoute></ProtectedRoute>} />
         <Route path="/bookings" element={<ProtectedRoute><RoleRoute roles={['resident']}><BookingsPage /></RoleRoute></ProtectedRoute>} />
-        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+        <Route path="/notifications" element={<AnyAuthRoute><NotificationsPage /></AnyAuthRoute>} />
+        <Route path="/admin/notifications" element={<AdminProtectedRoute><NotificationsPage /></AdminProtectedRoute>} />
         <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
         <Route path="/service-requests" element={<ProtectedRoute><RoleRoute roles={['apartment_admin', 'resident']}><ServiceRequestsPage /></RoleRoute></ProtectedRoute>} />
         <Route path="/payment-history" element={<ProtectedRoute><RoleRoute roles={['apartment_admin', 'resident']}><PaymentHistoryPage /></RoleRoute></ProtectedRoute>} />
@@ -103,6 +112,8 @@ export default function App() {
         <Route path="/admin/invoices" element={<AdminProtectedRoute><InvoicesPage /></AdminProtectedRoute>} />
         <Route path="/admin/account-management" element={<AdminProtectedRoute><AccountManagementPage /></AdminProtectedRoute>} />
         <Route path="/admin/audit-logs" element={<AdminProtectedRoute><AuditLogsPage /></AdminProtectedRoute>} />
+        <Route path="/admin/analytics" element={<AdminProtectedRoute><AnalyticsPage /></AdminProtectedRoute>} />
+        <Route path="/admin/apartment-analytics" element={<ProtectedRoute><RoleRoute roles={['apartment_admin']}><AnalyticsPage /></RoleRoute></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

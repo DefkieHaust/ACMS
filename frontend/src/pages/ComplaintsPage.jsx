@@ -5,6 +5,8 @@ import { ROLES } from '../utils/constants';
 import Modal from '../components/Modal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
+import Badge from '../components/Badge';
 
 export default function ComplaintsPage() {
   const { user } = useAuth();
@@ -56,7 +58,7 @@ export default function ComplaintsPage() {
       await api.post('/complaints', form);
       toast.success('Complaint raised');
       setModalOpen(false);
-      setForm({ committeeId: '', description: '' });
+      setForm({ committeeId: '', title: '', description: '' });
       fetchComplaints();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to raise complaint');
@@ -97,7 +99,7 @@ export default function ComplaintsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Complaints</h1>
         {isResident && (
-          <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Raise Complaint</button>
+          <Button onClick={() => setModalOpen(true)}>+ Raise Complaint</Button>
         )}
       </div>
 
@@ -138,13 +140,13 @@ export default function ComplaintsPage() {
                       <option value="resolved">Resolved</option>
                     </select>
                   ) : (
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${c.status === 'resolved' ? 'bg-green-100 text-green-700' : c.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>{c.status}</span>
+                    <Badge status={c.status} />
                   )}
                 </td>
                 <td className="px-6 py-4 text-gray-600">{c.rating ? '★'.repeat(c.rating) : '-'}</td>
                 <td className="px-6 py-4 text-right">
                   {isResident && c.status === 'resolved' && !c.rating && (
-                    <button onClick={() => openRateModal(c._id)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Rate</button>
+                    <button onClick={() => openRateModal(c._id)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Rate</button>
                   )}
                 </td>
               </tr>
@@ -191,8 +193,8 @@ export default function ComplaintsPage() {
             <textarea required rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Submit</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Submit</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

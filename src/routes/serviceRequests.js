@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, tenantIsolation, authorize } from '../middleware/auth.js';
+import { audit } from '../middleware/audit.js';
 import { getPagination } from '../utils/helpers.js';
-import { ServiceRequest, Unit } from '../models/index.js';
+import { ServiceRequest, Unit, User } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
+import { notifyApartmentAdmins, notifyResident } from '../services/notify.js';
 
 const router = Router();
 router.use(authenticate, tenantIsolation);
@@ -32,7 +34,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', authorize(ROLES.RESIDENT), async (req, res) => {
+router.post('/', authorize(ROLES.RESIDENT), audit('create', 'service_request'), async (req, res) => {
   try {
     const unit = await Unit.findOne({ residentUserId: req.user.userId, apartmentId: req.apartmentId });
     if (!unit) return res.status(400).json({ success: false, error: 'No unit associated with your account' });
@@ -42,13 +44,14 @@ router.post('/', authorize(ROLES.RESIDENT), async (req, res) => {
       apartmentId: req.apartmentId, unitId: unit._id, residentUserId: req.user.userId,
       title, description: description || '', category: category || 'other', priority: priority || 'medium',
     });
+    await notifyApartmentAdmins(req.apartmentId, `New service request: ${title}`, '/service-requests');
     res.status(201).json({ success: true, data: request });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to create service request' });
   }
 });
 
-router.put('/:id', authorize(ROLES.APARTMENT_ADMIN), async (req, res) => {
+router.put('/:id', authorize(ROLES.APARTMENT_ADMIN), audit('update', 'service_request'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { status, assignedTo, notes } = req.body;
@@ -60,13 +63,16 @@ router.put('/:id', authorize(ROLES.APARTMENT_ADMIN), async (req, res) => {
       { _id: req.params.id, apartmentId: req.apartmentId }, update, { new: true }
     );
     if (!request) return res.status(404).json({ success: false, error: 'Service request not found' });
+    if (request.residentUserId) {
+      await notifyResident(req.apartmentId, request.residentUserId, `Service request updated: ${update.status || ''}`, '/service-requests');
+    }
     res.json({ success: true, data: request });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to update service request' });
   }
 });
 
-router.put('/:id/rate', authorize(ROLES.RESIDENT), async (req, res) => {
+router.put('/:id/rate', authorize(ROLES.RESIDENT), audit('update', 'service_request_rating'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { rating } = req.body;

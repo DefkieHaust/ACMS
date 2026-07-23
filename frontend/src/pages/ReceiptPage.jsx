@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 export default function ReceiptPage() {
   const { billId } = useParams();
@@ -70,8 +71,8 @@ export default function ReceiptPage() {
       </div>
 
       <div className="mt-6 flex gap-3 print:hidden">
-        <button onClick={() => window.print()} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Print Receipt</button>
-        <button onClick={() => navigate('/bills')} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Back to Bills</button>
+        <Button onClick={() => window.print()} className="flex-1">Print Receipt</Button>
+        <Button variant="secondary" onClick={() => navigate('/bills')} className="flex-1">Back to Bills</Button>
       </div>
     </div>
   );

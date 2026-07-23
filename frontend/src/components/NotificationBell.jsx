@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
+import useWebSocket from '../hooks/useWebSocket';
 
 export default function NotificationBell() {
   const [count, setCount] = useState(0);
@@ -26,10 +27,15 @@ export default function NotificationBell() {
     setLoading(false);
   };
 
+  const handleIncomingNotification = useCallback((data) => {
+    setCount((c) => c + 1);
+    setNotifications((prev) => [data, ...prev].slice(0, 5));
+  }, []);
+
+  useWebSocket(handleIncomingNotification);
+
   useEffect(() => {
     fetchCount();
-    const interval = setInterval(fetchCount, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -78,7 +84,7 @@ export default function NotificationBell() {
         <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-            <button onClick={handleViewAll} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View all</button>
+            <button onClick={handleViewAll} className="text-xs text-primary-600 hover:text-primary-800 font-medium">View all</button>
           </div>
           <div className="max-h-72 overflow-y-auto">
             {loading ? (
@@ -92,7 +98,7 @@ export default function NotificationBell() {
                     <p className="text-sm text-gray-900 flex-1">{n.message}</p>
                     <button
                       onClick={() => handleMarkRead(n._id)}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 shrink-0 mt-0.5"
+                      className="text-xs text-primary-600 hover:text-primary-800 shrink-0 mt-0.5"
                     >
                       Mark read
                     </button>

@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { authenticate, tenantIsolation, authorize } from '../middleware/auth.js';
+import { audit } from '../middleware/audit.js';
 import { getPagination } from '../utils/helpers.js';
 import { Document } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
@@ -17,7 +18,11 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
+  destination: (req, file, cb) => {
+    const aptDir = path.join(uploadsDir, String(req.apartmentId || 'common'));
+    if (!fs.existsSync(aptDir)) fs.mkdirSync(aptDir, { recursive: true });
+    cb(null, aptDir);
+  },
   filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
@@ -38,7 +43,7 @@ const upload = multer({
 const router = Router();
 router.use(authenticate, tenantIsolation);
 
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', upload.single('file'), audit('create', 'document'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
     const { category, description } = req.body;
@@ -78,7 +83,7 @@ router.get('/:id/download', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const doc = await Document.findOne({ _id: req.params.id, apartmentId: req.apartmentId });
     if (!doc) return res.status(404).json({ success: false, error: 'Document not found' });
-    const filePath = path.join(uploadsDir, doc.filename);
+    const filePath = path.join(uploadsDir, String(req.apartmentId), doc.filename);
     if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'File not found on disk' });
     res.download(filePath, doc.originalName);
   } catch (err) {
@@ -86,12 +91,12 @@ router.get('/:id/download', async (req, res) => {
   }
 });
 
-router.delete('/:id', authorize(ROLES.APARTMENT_ADMIN), async (req, res) => {
+router.delete('/:id', authorize(ROLES.APARTMENT_ADMIN), audit('delete', 'document'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const doc = await Document.findOneAndDelete({ _id: req.params.id, apartmentId: req.apartmentId });
     if (!doc) return res.status(404).json({ success: false, error: 'Document not found' });
-    const filePath = path.join(uploadsDir, doc.filename);
+    const filePath = path.join(uploadsDir, String(req.apartmentId), doc.filename);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     res.json({ success: true, data: { message: 'Document deleted' } });
   } catch (err) {

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ROLES } from '../utils/constants';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 export default function DocumentsPage() {
   const { user } = useAuth();
@@ -89,10 +90,8 @@ export default function DocumentsPage() {
             <option value="forms">Forms</option>
             <option value="other">Other</option>
           </select>
-          <label className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium cursor-pointer">
-            Upload
-            <input ref={fileRef} type="file" onChange={handleUpload} className="hidden" />
-          </label>
+          <Button onClick={() => fileRef.current?.click()}>Upload</Button>
+          <input ref={fileRef} type="file" onChange={handleUpload} className="hidden" />
         </div>
       </div>
 
@@ -132,7 +131,7 @@ export default function DocumentsPage() {
                 <td className="px-6 py-4 text-sm text-gray-600">{new Date(d.createdAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex gap-2 justify-end">
-                    <button onClick={() => handleDownload(d._id, d.originalName)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Download</button>
+                    <button onClick={() => handleDownload(d._id, d.originalName)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Download</button>
                     {isAdmin && <button onClick={() => handleDelete(d._id)} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>}
                   </div>
                 </td>

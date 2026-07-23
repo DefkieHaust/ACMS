@@ -5,6 +5,8 @@ import ConfirmModal from '../components/ConfirmModal';
 import PageLoading from '../components/PageLoading';
 import toast from 'react-hot-toast';
 import { UNIT_TYPES } from '../utils/constants';
+import Button from '../components/Button';
+import Badge from '../components/Badge';
 
 export default function UnitsPage() {
   const [units, setUnits] = useState([]);
@@ -84,7 +86,7 @@ export default function UnitsPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Units</h1>
-        <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Add Unit</button>
+        <Button onClick={openCreate}>+ Add Unit</Button>
       </div>
 
       {error && (
@@ -102,13 +104,13 @@ export default function UnitsPage() {
                 <h3 className="text-xl font-bold text-gray-900">{u.unitNumber}</h3>
                 <span className="text-xs text-gray-500 capitalize">{u.unitType || 'apartment'}</span>
               </div>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${u.status === 'occupied' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{u.status}</span>
+              <Badge status={u.status} />
             </div>
             {u.residentUserId && (
               <p className="text-sm text-gray-600">Resident: {u.residentUserId.name}</p>
             )}
             <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-              <button onClick={() => openEdit(u)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+              <button onClick={() => openEdit(u)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Edit</button>
               <button onClick={() => { setConfirmId(u._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
             </div>
           </div>
@@ -144,8 +146,8 @@ export default function UnitsPage() {
             </select>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Save</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Save</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

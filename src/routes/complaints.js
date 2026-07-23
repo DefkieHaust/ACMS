@@ -2,10 +2,12 @@ import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { audit } from '../middleware/audit.js';
 import { createComplaintSchema, updateComplaintSchema } from '../utils/validate.js';
 import { getPagination } from '../utils/helpers.js';
 import { Complaint, Unit, Committee } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
+import { notifyCommitteeMembers, notifyResident } from '../services/notify.js';
 
 const router = Router();
 router.use(authenticate, tenantIsolation);
@@ -37,7 +39,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', validate(createComplaintSchema), async (req, res) => {
+router.post('/', validate(createComplaintSchema), audit('create', 'complaint'), async (req, res) => {
   try {
     if (req.user.type !== ROLES.RESIDENT) {
       return res.status(403).json({ success: false, error: 'Only residents can raise complaints' });
@@ -55,13 +57,14 @@ router.post('/', validate(createComplaintSchema), async (req, res) => {
       title: req.validatedBody.title || '',
       description: req.validatedBody.description,
     });
+    await notifyCommitteeMembers(req.validatedBody.committeeId, req.apartmentId, `New complaint: ${complaint.title}`, `/complaints`);
     res.status(201).json({ success: true, data: complaint });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to create complaint' });
   }
 });
 
-router.put('/:id', validate(updateComplaintSchema), async (req, res) => {
+router.put('/:id', validate(updateComplaintSchema), audit('update', 'complaint'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     let filter = { _id: req.params.id, apartmentId: req.apartmentId };
@@ -76,13 +79,19 @@ router.put('/:id', validate(updateComplaintSchema), async (req, res) => {
 
     const complaint = await Complaint.findOneAndUpdate(filter, update, { new: true });
     if (!complaint) return res.status(404).json({ success: false, error: 'Complaint not found' });
+    if (update.status && complaint.raisedByUnitId) {
+      const unit = await Unit.findById(complaint.raisedByUnitId);
+      if (unit?.residentUserId) {
+        await notifyResident(req.apartmentId, unit.residentUserId, `Complaint updated to: ${update.status}`, `/complaints`);
+      }
+    }
     res.json({ success: true, data: complaint });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to update complaint' });
   }
 });
 
-router.put('/:id/rate', async (req, res) => {
+router.put('/:id/rate', audit('update', 'complaint_rating'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const { rating } = req.body;

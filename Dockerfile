@@ -21,5 +21,5 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 USER appuser
 EXPOSE 5000
-ENV NODE_ENV=production
+ENV NODE_ENV=production NODE_OPTIONS="--max-old-space-size=512"
 CMD ["node", "src/index.js"]

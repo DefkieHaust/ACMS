@@ -16,3 +16,4 @@ export { default as FacilityBooking } from './FacilityBooking.js';
 export { default as Notification } from './Notification.js';
 export { default as Document } from './Document.js';
 export { default as ServiceRequest } from './ServiceRequest.js';
+export { default as Upload } from './Upload.js';

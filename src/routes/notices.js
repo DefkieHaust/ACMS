@@ -2,10 +2,12 @@ import mongoose from 'mongoose';
 import { Router } from 'express';
 import { authenticate, tenantIsolation } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { audit } from '../middleware/audit.js';
 import { createNoticeSchema } from '../utils/validate.js';
-import { Notice } from '../models/index.js';
+import { Notice, User } from '../models/index.js';
 import { ROLES } from '../config/constants.js';
 import { getPagination } from '../utils/helpers.js';
+import { notifyUsers } from '../services/notify.js';
 
 const router = Router();
 router.use(authenticate, tenantIsolation);
@@ -39,7 +41,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', validate(createNoticeSchema), async (req, res) => {
+router.post('/', validate(createNoticeSchema), audit('create', 'notice'), async (req, res) => {
   try {
     if (req.user.type === ROLES.RESIDENT) {
       return res.status(403).json({ success: false, error: 'Residents cannot post notices' });
@@ -59,13 +61,15 @@ router.post('/', validate(createNoticeSchema), async (req, res) => {
     }
 
     const notice = await Notice.create(noticeData);
+    const residents = await User.find({ apartmentId: req.apartmentId, type: { $in: [ROLES.RESIDENT, ROLES.UNIT_OWNER] } }).select('_id');
+    await notifyUsers({ apartmentId: req.apartmentId, userIds: residents.map(r => r._id), type: 'notice', message: `New notice: ${noticeData.title}`, link: '/notices' });
     res.status(201).json({ success: true, data: notice });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to create notice' });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', audit('delete', 'notice'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
     const notice = await Notice.findOneAndDelete({

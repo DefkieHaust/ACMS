@@ -5,6 +5,8 @@ import ConfirmModal from '../components/ConfirmModal';
 import PageLoading from '../components/PageLoading';
 import toast from 'react-hot-toast';
 import { CURRENCIES } from '../utils/constants';
+import Button from '../components/Button';
+import Card from '../components/Card';
 
 export default function PlansPage() {
   const [plans, setPlans] = useState([]);
@@ -79,7 +81,7 @@ export default function PlansPage() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Plans</h1>
-        <button onClick={openCreate} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ New Plan</button>
+        <Button onClick={openCreate}>+ New Plan</Button>
       </div>
 
       {error && (
@@ -91,9 +93,9 @@ export default function PlansPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {plans.map((p) => (
-          <div key={p._id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <Card key={p._id}>
             <h3 className="text-lg font-semibold text-gray-900">{p.name}</h3>
-            <p className="text-3xl font-bold text-indigo-600 mt-2">{p.currency || '$'}{p.price}<span className="text-sm text-gray-500 font-normal">/{p.priceType === 'per-unit' ? 'unit/month' : 'month'}</span></p>
+            <p className="text-3xl font-bold text-primary-600 mt-2">{p.currency || '$'}{p.price}<span className="text-sm text-gray-500 font-normal">/{p.priceType === 'per-unit' ? 'unit/month' : 'month'}</span></p>
             <p className="text-sm text-gray-500 mt-1 capitalize">{p.priceType} pricing</p>
             {p.features?.length > 0 && (
               <ul className="mt-4 space-y-1">
@@ -101,10 +103,10 @@ export default function PlansPage() {
               </ul>
             )}
             <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-              <button onClick={() => openEdit(p)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
+              <button onClick={() => openEdit(p)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Edit</button>
               <button onClick={() => { setConfirmId(p._id); setConfirmOpen(true); }} className="text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -138,8 +140,8 @@ export default function PlansPage() {
             <input type="text" value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })} placeholder="e.g. Unlimited units, Priority support" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Save</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Save</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

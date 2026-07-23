@@ -3,6 +3,7 @@ import api from '../api/client';
 import Modal from '../components/Modal';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import toast from 'react-hot-toast';
+import Button from '../components/Button';
 
 function QRCodeModal({ open, onClose, qrCode, visitorName }) {
   const qrUrl = `${window.location.origin}/api/visitors/verify/${qrCode}`;
@@ -23,12 +24,9 @@ function QRCodeModal({ open, onClose, qrCode, visitorName }) {
           <p className="text-xs text-gray-500 mt-1 break-all">{qrUrl}</p>
         </div>
         <p className="text-xs text-gray-400">Visitor can show this QR code at the gate for check-in.</p>
-        <button
-          onClick={() => { navigator.clipboard?.writeText(qrUrl); toast.success('URL copied'); }}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
-        >
+        <Button onClick={() => { navigator.clipboard?.writeText(qrUrl); toast.success('URL copied'); }}>
           Copy URL
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -117,8 +115,8 @@ export default function VisitorsPage() {
             <option value="checked_in">Checked In</option>
             <option value="pre_approved">Pre-approved</option>
           </select>
-          <button onClick={() => setPreApproveModalOpen(true)} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">Pre-approve</button>
-          <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">+ Log Visitor</button>
+          <Button onClick={() => setPreApproveModalOpen(true)} variant="primary" className="bg-green-600 hover:bg-green-700">Pre-approve</Button>
+          <Button onClick={() => setModalOpen(true)}>+ Log Visitor</Button>
         </div>
       </div>
 
@@ -167,10 +165,10 @@ export default function VisitorsPage() {
                       <button onClick={() => showQR(l)} className="text-sm text-blue-600 hover:text-blue-800 font-medium">QR</button>
                     )}
                     {(!l.checkOut && !l.preApproved) && (
-                      <button onClick={() => checkout(l._id)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Check Out</button>
+                      <button onClick={() => checkout(l._id)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Check Out</button>
                     )}
                     {l.preApproved && !l.checkOut && (
-                      <button onClick={() => checkout(l._id)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Check Out</button>
+                      <button onClick={() => checkout(l._id)} className="text-sm text-primary-600 hover:text-primary-800 font-medium">Check Out</button>
                     )}
                   </div>
                 </td>
@@ -196,8 +194,8 @@ export default function VisitorsPage() {
             <input type="text" required value={form.unitVisited} onChange={(e) => setForm({ ...form, unitVisited: e.target.value })} placeholder="e.g. A-101" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Log</button>
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" className="flex-1">Log</Button>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -221,8 +219,8 @@ export default function VisitorsPage() {
             <input type="text" required value={preApproveForm.unitVisited} onChange={(e) => setPreApproveForm({ ...preApproveForm, unitVisited: e.target.value })} placeholder="e.g. A-101" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">Pre-approve</button>
-            <button type="button" onClick={() => setPreApproveModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <Button type="submit" variant="primary" className="flex-1 bg-green-600 hover:bg-green-700">Pre-approve</Button>
+            <Button type="button" variant="secondary" onClick={() => setPreApproveModalOpen(false)} className="flex-1">Cancel</Button>
           </div>
         </form>
       </Modal>

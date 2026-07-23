@@ -8,6 +8,7 @@ import {
   createPlanSchema,
   createUserSchema,
   markInvoicePaidSchema,
+  updateAccountSchema,
 } from '../utils/validate.js';
 import { hashPassword, escapeRegex, getPagination } from '../utils/helpers.js';
 import { Apartment, Plan, User, SaaSInvoice, Unit } from '../models/index.js';
@@ -293,14 +294,10 @@ router.post('/accounts', validate(createUserSchema), audit('create', 'account'),
   }
 });
 
-router.put('/accounts/:id', audit('update', 'account'), async (req, res) => {
+router.put('/accounts/:id', validate(updateAccountSchema), audit('update', 'account'), async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, error: 'Invalid ID format' });
-    const allowed = ['type', 'apartmentId', 'status'];
-    const update = {};
-    for (const key of allowed) {
-      if (req.body[key] !== undefined) update[key] = req.body[key];
-    }
+    const update = { ...req.validatedBody };
     if (update.apartmentId === '') update.apartmentId = null;
     const user = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select('-passwordHash').populate('apartmentId', 'name');
     if (!user) return res.status(404).json({ success: false, error: 'Account not found' });

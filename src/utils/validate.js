@@ -44,6 +44,7 @@ export const createUserSchema = z.object({
   identifier: z.string().min(1),
   password: z.string().min(6),
   phone: z.union([z.array(z.string()), z.string()]).optional().transform(v => Array.isArray(v) ? v : v ? [v] : []),
+  email: z.string().email().optional().or(z.literal('')),
   identityNumber: z.string().optional(),
   residence: z.string().optional(),
 });
@@ -54,6 +55,7 @@ export const updateUserSchema = z.object({
   unitId: z.string().optional().nullable(),
   residentType: z.string().optional().nullable(),
   phone: z.array(z.string()).optional(),
+  email: z.string().email().optional().or(z.literal('')),
   identityNumber: z.string().optional(),
   residence: z.string().optional(),
   customRole: z.string().optional(),
@@ -61,6 +63,10 @@ export const updateUserSchema = z.object({
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
+  newPassword: z.string().min(6),
+});
+
+export const adminChangePasswordSchema = z.object({
   newPassword: z.string().min(6),
 });
 
@@ -171,4 +177,10 @@ export const updateApartmentSettingsSchema = z.object({
 
 export const createCustomRoleSchema = z.object({
   name: z.string().min(1),
+});
+
+export const updateAccountSchema = z.object({
+  type: z.enum(['apartment_admin', 'committee_head', 'committee_member', 'resident', 'unit_owner']).optional(),
+  apartmentId: z.string().optional().nullable(),
+  status: z.enum(['active', 'inactive']).optional(),
 });

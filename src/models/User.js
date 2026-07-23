@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema({
   identifier: { type: String, required: true },
   passwordHash: { type: String, required: true },
   phone: [{ type: String }],
+  email: { type: String, default: '' },
   identityNumber: { type: String, default: '' },
   residence: { type: String, default: '' },
   customRole: { type: String, default: '' },

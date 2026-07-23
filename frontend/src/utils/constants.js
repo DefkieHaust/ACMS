@@ -37,6 +37,7 @@ export const BILL_STATUS = {
 export const NAV_ITEMS = {
   site_admin: [
     { label: 'Dashboard', path: '/admin/dashboard' },
+    { label: 'Analytics', path: '/admin/analytics' },
     { label: 'Apartments', path: '/admin/apartments' },
     { label: 'Plans', path: '/admin/plans' },
     { label: 'SaaS Invoices', path: '/admin/invoices' },
@@ -46,6 +47,7 @@ export const NAV_ITEMS = {
   ],
   apartment_admin: [
     { label: 'Dashboard', path: '/' },
+    { label: 'Analytics', path: '/admin/apartment-analytics' },
     { label: 'Units', path: '/units' },
     { label: 'Residents', path: '/residents' },
     { label: 'Committees', path: '/committees' },
