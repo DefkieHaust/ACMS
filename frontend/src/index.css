@@ -5,17 +5,13 @@
 @tailwind utilities;
 
 @layer base {
-  html {
-    scroll-behavior: smooth;
-  }
+  html { scroll-behavior: smooth; }
 
-  body {
-    @apply antialiased;
-  }
+  body { @apply antialiased; }
 
-  *:focus-visible {
-    @apply outline-2 outline-offset-2 outline-primary-500;
-  }
+  *:focus-visible { @apply outline-2 outline-offset-2 outline-primary-500; }
+
+  input, textarea, select { @apply transition-all duration-200; }
 }
 
 @layer components {
@@ -30,31 +26,88 @@
     background-size: 200% 100%;
   }
 
-  .card-hover {
-    @apply transition-all duration-200;
+  .card-hover { @apply transition-all duration-200; }
+  .card-hover:hover { @apply shadow-lg -translate-y-0.5; }
+
+  .table-row-hover { @apply transition-colors duration-150; }
+  .table-row-hover:hover { @apply bg-primary-50/50 dark:bg-primary-900/10; }
+
+  .page-enter { animation: fadeInUp 0.4s ease-out; }
+
+  .stat-value { @apply text-3xl font-bold tracking-tight; }
+
+  .glass-card { @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200/60 dark:border-gray-800/60 shadow-sm; }
+
+  .btn-pulse {
+    position: relative;
+    overflow: hidden;
   }
 
-  .card-hover:hover {
-    @apply shadow-lg -translate-y-0.5;
+  .btn-pulse::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(255,255,255,0.3);
+    opacity: 0;
+    transition: opacity 0.3s;
   }
 
-  .table-row-hover {
-    @apply transition-colors duration-150;
+  .btn-pulse:active::after {
+    opacity: 1;
+    animation: pulseRing 0.4s ease-out;
   }
 
-  .table-row-hover:hover {
-    @apply bg-primary-50/50 dark:bg-primary-900/10;
+  .fade-in-stagger > * {
+    opacity: 0;
+    animation: fadeInUp 0.4s ease-out forwards;
   }
 
-  .page-enter {
-    animation: fadeInUp 0.4s ease-out;
+  .fade-in-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .fade-in-stagger > *:nth-child(2) { animation-delay: 40ms; }
+  .fade-in-stagger > *:nth-child(3) { animation-delay: 80ms; }
+  .fade-in-stagger > *:nth-child(4) { animation-delay: 120ms; }
+  .fade-in-stagger > *:nth-child(5) { animation-delay: 160ms; }
+  .fade-in-stagger > *:nth-child(6) { animation-delay: 200ms; }
+  .fade-in-stagger > *:nth-child(7) { animation-delay: 240ms; }
+  .fade-in-stagger > *:nth-child(8) { animation-delay: 280ms; }
+  .fade-in-stagger > *:nth-child(9) { animation-delay: 320ms; }
+  .fade-in-stagger > *:nth-child(10) { animation-delay: 360ms; }
+
+  .input-focus-ring {
+    @apply border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
   }
 
-  .stat-value {
-    @apply text-3xl font-bold tracking-tight;
+  .input-focus-ring:focus {
+    @apply border-primary-500;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    transform: translateY(-1px);
   }
 
-  .glass-card {
-    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200/60 dark:border-gray-800/60 shadow-sm;
+  .table-row-enter {
+    animation: fadeInUp 0.35s ease-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes pulseRing {
+    0% { opacity: 1; transform: scale(0.95); }
+    100% { opacity: 0; transform: scale(1.2); }
+  }
+
+  @keyframes toastSlideIn {
+    0% { opacity: 0; transform: translateX(40px) scale(0.95); }
+    100% { opacity: 1; transform: translateX(0) scale(1); }
+  }
+
+  @keyframes toastSlideOut {
+    0% { opacity: 1; transform: translateX(0) scale(1); }
+    100% { opacity: 0; transform: translateX(40px) scale(0.95); }
+  }
+
+  @keyframes scaleCheck {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
   }
 }
