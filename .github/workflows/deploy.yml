@@ -38,4 +38,4 @@ jobs:
             if [ -n "$SMTP_USER" ]; then echo "SMTP_USER=$SMTP_USER" >> .env; fi
             if [ -n "$SMTP_PASS" ]; then echo "SMTP_PASS=$SMTP_PASS" >> .env; fi
             if [ -n "$STRIPE_SECRET_KEY" ]; then echo "STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY" >> .env; fi
-            docker compose pull && docker compose up -d
+            docker compose down --remove-orphans && docker compose pull && docker compose up -d
