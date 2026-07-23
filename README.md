@@ -78,7 +78,19 @@ The app auto-seeds a site admin account and default plans (Starter $5/unit, Stan
 | `make up` | Start all services (app + MongoDB) |
 | `make down` / `make stop` | Stop and remove containers |
 | `make rebuild` | Build then up |
-| `make publish` | Tag with git tag + latest, push to GHCR |
+| `make publish` | Tag with git tag + latest, push to GHCR (manual fallback — CI does this automatically) |
+
+### Automated Deploy Pipeline
+
+Pushing a `v*` tag triggers a GitHub Actions workflow that:
+
+1. **Builds** the Docker image
+2. **Pushes** it to `ghcr.io/defkiehaust/acms` (versioned + `latest`)
+3. **SSHes** into the production server
+4. **Downloads** `deploy/compose.yml` and writes `.env` from repo secrets
+5. **Restarts** containers (`docker compose pull && docker compose up -d`)
+
+No manual steps required after tagging. See `.github/workflows/deploy.yml`.
 
 ## Manual Setup (Without Docker)
 
@@ -308,6 +320,58 @@ All endpoints return `{ success: boolean, data?: ..., error?: string }`. Authent
 The app supports English, Spanish, and French. Language is detected from `localStorage` or browser settings. Toggle via the language switcher in the sidebar header.
 
 To add a new language, create `frontend/src/locales/{lang}.json` and register it in `frontend/src/i18n.js`.
+
+## Contributor's Guide
+
+### Branching
+
+- `main` — production-ready, protected
+- Feature branches: `feat/<short-description>`
+- Fix branches: `fix/<short-description>`
+
+### Commit Convention
+
+```
+<type>(<scope>): <description>
+```
+
+**Types:** `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`, `perf`
+
+**Scopes:** `api`, `ui`, `model`, `auth`, `billing`, `payments`, `visitors`, `complaints`, `notices`, `ledger`, `bills`, `units`, `residents`, `committees`, `dashboard`, `settings`, `export`, `upload`, `cron`, `seed`, `tests`, `config`, `deps`, `deploy`
+
+**Examples:**
+```
+feat(visitors): add pre-approval QR code flow
+fix(api): validate ObjectId format on all :id params
+refactor(ui): replace confirm() with Modal component
+test(api): add permission boundary tests
+```
+
+### Before Submitting
+
+1. **Run tests** — `npm test` (backed, 233+ tests)
+2. **Lint** — `npx eslint src/ tests/` (if configured)
+3. **Typecheck** — `npm run typecheck` if available
+4. **Build frontend** — `cd frontend && npm run build`
+
+### Pull Request Process
+
+1. Open a PR against `main`
+2. Ensure CI (lint + test backend + test frontend) passes
+3. Request review from a maintainer
+4. Squash-merge once approved
+
+### Code Style
+
+- **Backend:** ES modules (`import`/`export`), Express async route handlers, Zod validation schemas in `src/utils/validate.js`, response envelope `{ success, data, error }`
+- **Frontend:** Functional React components with hooks, Tailwind CSS utility classes, i18n via `t()` from `react-i18next`, design tokens from `DESIGN.md`
+- **API:** All list endpoints paginated (`?page=1&limit=20`), all mutations validated, audit logging on create/update/delete
+
+### Adding a Language
+
+1. Create `frontend/src/locales/{lang}.json`
+2. Register it in `frontend/src/i18n.js`
+3. Add the locale to `LanguageSwitcher.jsx`
 
 ## License
 
