@@ -107,7 +107,7 @@ export default function VisitorsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">Visitor Log</h1>
       </div>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
             <div className="h-4 skeleton-shimmer rounded w-full" />
@@ -142,7 +142,7 @@ export default function VisitorsPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
             <tr>

@@ -90,7 +90,7 @@ export default function ServiceRequestsPage() {
   if (loading) return (
     <div className="space-y-4">
       <div className="h-8 w-64 skeleton-shimmer rounded-lg" />
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto p-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="flex gap-4 mb-4">
             <div className="h-4 skeleton-shimmer rounded flex-1" />
@@ -131,7 +131,7 @@ export default function ServiceRequestsPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
             <tr>

@@ -24,7 +24,7 @@ export default function ReceiptPage() {
 
   if (loading) return (
     <div className="space-y-4 animate-pulse">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto">
         <div className="p-8 space-y-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="h-6 skeleton-shimmer rounded bg-gray-200 dark:bg-gray-700" />
@@ -38,7 +38,7 @@ export default function ReceiptPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden print:shadow-none print:border-none">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto print:shadow-none print:border-none">
         <div className="p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white">Payment Receipt</h1>

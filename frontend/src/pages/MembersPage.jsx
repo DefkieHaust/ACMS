@@ -146,7 +146,7 @@ export default function MembersPage() {
         <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-56 animate-pulse" />
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-72 mt-2 animate-pulse" />
       </div>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto">
         <div className="p-6 space-y-4 animate-pulse">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4">
@@ -182,7 +182,7 @@ export default function MembersPage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
             <tr>
