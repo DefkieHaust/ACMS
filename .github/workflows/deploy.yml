@@ -23,9 +23,12 @@ jobs:
           host: ${{ steps.parse.outputs.host }}
           username: ${{ steps.parse.outputs.user }}
           key: ${{ secrets.SSH_KEY }}
-          envs: JWT_SECRET,CORS_ORIGINS,SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,STRIPE_SECRET_KEY
+          envs: JWT_SECRET,CORS_ORIGINS,SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,STRIPE_SECRET_KEY,GHCR_TOKEN
           script: |
             set -e
+            if [ -n "$GHCR_TOKEN" ]; then
+              echo "$GHCR_TOKEN" | docker login ghcr.io -u DefkieHaust --password-stdin
+            fi
             mkdir -p ${{ secrets.WORK_DIR }}
             cd ${{ secrets.WORK_DIR }}
             curl -sL -o compose.yml \
